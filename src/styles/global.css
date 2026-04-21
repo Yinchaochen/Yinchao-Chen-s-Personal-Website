@@ -1,0 +1,141 @@
+@import "https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap";
+
+/* ─── Reset ─────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body, div, span, h1, h2, h3, h4, h5, h6, p, a, img, ul, ol, li, button, input, textarea { margin: 0; padding: 0; border: none; }
+b, strong { font-weight: 700; display: inline-block; }
+a, a:visited, a:active, button { color: inherit; text-decoration: none; display: inline-block; touch-action: manipulation; }
+button, select { text-transform: none; cursor: pointer; background: none; }
+button:focus, input:focus { outline: none; }
+img, video { max-width: 100%; vertical-align: middle; border-style: none; }
+ol, ul { list-style: none; }
+
+/* ─── Grid system (exact Max Mara clone) ─────────────── */
+:root {
+  --col-numb: 15;
+  --grid-val: calc(100 / var(--col-numb));
+
+  /* Color palette */
+  --color-bg: #fafafa;
+  --color-loader: #d45054;
+  --color-primary: #68142b;
+  --color-dark: #2c2e2c;
+  --color-accent: #f0ffa4;
+  --color-navigator: #fe7589;
+  --color-shadow: #2c2e2c40;
+}
+
+@media screen and (min-width: 48em) {
+  :root { --col-numb: 32; }
+}
+
+/* ─── Base ───────────────────────────────────────────── */
+html, body {
+  width: 100vw;
+  height: 100svh;
+  position: fixed;
+  top: 0; left: 0;
+  overflow: hidden;
+}
+
+body {
+  color: var(--color-dark);
+  background: var(--color-bg);
+  font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-size: max(12px, 3.2vw);
+  line-height: 1.25;
+}
+
+@media screen and (min-width: 640px) { body { font-size: max(22px, .952381vw); } }
+@media screen and (min-width: 768px) { body { font-size: max(12px, .833333vw); } }
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Libre Baskerville', Georgia, serif;
+  color: var(--color-primary);
+}
+
+#root {
+  width: 100vw;
+  height: 100svh;
+  position: fixed;
+  top: 0; left: 0;
+  overflow: clip scroll;
+}
+
+/* ─── Typography helpers ─────────────────────────────── */
+.font-display {
+  font-family: 'Libre Baskerville', Georgia, serif;
+}
+.font-body {
+  font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* ─── Fluid font-size scale (Max Mara pattern) ──────── */
+.fs-xl {
+  font-size: max(12px, 9.33333vw); line-height: 1;
+}
+@media screen and (min-width: 640px) { .fs-xl { font-size: max(22px, 7.02381vw); } }
+@media screen and (min-width: 768px) { .fs-xl { font-size: max(12px, 6.14583vw); } }
+
+.fs-lg {
+  font-size: max(12px, 6.4vw); line-height: 1.2;
+}
+@media screen and (min-width: 640px) { .fs-lg { font-size: max(22px, 2.38095vw); } }
+@media screen and (min-width: 768px) { .fs-lg { font-size: max(12px, 2.08333vw); } }
+
+.fs-md {
+  font-size: max(12px, 4.8vw); line-height: 1.44;
+}
+@media screen and (min-width: 640px) { .fs-md { font-size: max(22px, 1.78571vw); } }
+@media screen and (min-width: 768px) { .fs-md { font-size: max(12px, 1.5625vw); } }
+
+.fs-sm {
+  font-size: max(12px, 3.2vw); line-height: 1.5;
+}
+@media screen and (min-width: 640px) { .fs-sm { font-size: max(22px, 1.19048vw); } }
+@media screen and (min-width: 768px) { .fs-sm { font-size: max(12px, 1.04167vw); } }
+
+.fs-xs {
+  font-size: max(12px, 3.73333vw); line-height: 1.28571;
+}
+@media screen and (min-width: 640px) { .fs-xs { font-size: max(22px, 1.07143vw); } }
+@media screen and (min-width: 768px) { .fs-xs { font-size: max(12px, .9375vw); } }
+
+/* ─── Drop shadow (Max Mara signature effect) ───────── */
+.mm-shadow {
+  filter: drop-shadow(4px 4px var(--color-shadow));
+  transition: filter .5s cubic-bezier(.215, .61, .355, 1);
+}
+.mm-shadow:hover { filter: drop-shadow(0 0 transparent); }
+
+/* ─── Rotate warning (landscape on mobile) ──────────── */
+.rotate {
+  display: none;
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100svh;
+  background: var(--color-loader);
+  z-index: 200;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  color: var(--color-primary);
+  padding: 0 calc(var(--grid-val) * .5vw);
+}
+@media screen and (max-width: 47.99em) and (orientation: landscape) {
+  .rotate { display: flex; }
+}
+
+/* ─── Transitions ────────────────────────────────────── */
+.fade-enter { opacity: 0; }
+.fade-enter-active { transition: opacity .5s cubic-bezier(.645, .045, .355, 1); }
+.fade-exit { opacity: 1; }
+.fade-exit-active { opacity: 0; transition: opacity .5s cubic-bezier(.645, .045, .355, 1); }
+
+/* ─── Scrollbar ──────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(104, 20, 43, .25); border-radius: 2px; }

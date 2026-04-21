@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 60" fill="none" preserveAspectRatio="none">
+  <rect x="2" y="2" width="316" height="56" rx="4" fill="#fafafa" stroke="#68142b" stroke-width="1.5"/>
+  <!-- Inner decorative border -->
+  <rect x="6" y="6" width="308" height="48" rx="3" fill="none" stroke="#68142b" stroke-width="0.5" opacity="0.4"/>
+</svg>
