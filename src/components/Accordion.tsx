@@ -142,7 +142,7 @@ function SectionContent({ id }: { id: string }) {
           onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background='rgba(68,0,141,0.08)'; }}
           onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background='transparent'; }}
         >
-          {lang==='zh'?'阅读文章':lang==='de'?'Lesen':'Read'}
+          Blog
         </button>
       </div>
     </div>
