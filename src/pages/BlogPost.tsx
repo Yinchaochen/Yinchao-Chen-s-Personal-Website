@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { supabase, type Article } from '../lib/supabase';
+import type { Session } from '@supabase/supabase-js';
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-US', {
@@ -13,6 +14,7 @@ export default function BlogPost() {
   const navigate = useNavigate();
   const [article, setArticle] = useState<Article | null>(null);
   const [loading, setLoading] = useState(true);
+  const [session, setSession] = useState<Session | null>(null);
 
   useEffect(() => {
     if (!slug) return;
@@ -22,6 +24,7 @@ export default function BlogPost() {
         setArticle(data);
         setLoading(false);
       });
+    supabase.auth.getSession().then(({ data }) => setSession(data.session));
   }, [slug, navigate]);
 
   if (loading) return (
@@ -54,13 +57,15 @@ export default function BlogPost() {
         }}>
           Yinchao Chen
         </Link>
-        <Link to={`/write/${article.id}`} style={{
-          fontFamily: 'Inter, sans-serif', fontSize: '12px',
-          letterSpacing: '0.08em', textTransform: 'uppercase',
-          color: '#2c2e2c', opacity: 0.45,
-        }}>
-          Edit
-        </Link>
+        {session && (
+          <Link to={`/write/${article.id}`} style={{
+            fontFamily: 'Inter, sans-serif', fontSize: '12px',
+            letterSpacing: '0.08em', textTransform: 'uppercase',
+            color: '#2c2e2c', opacity: 0.45,
+          }}>
+            Edit
+          </Link>
+        )}
       </nav>
 
       {/* Article */}

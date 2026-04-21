@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase, type Article } from '../lib/supabase';
+import type { Session } from '@supabase/supabase-js';
 
 function stripHtml(html: string) {
   return html.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
@@ -15,10 +16,12 @@ function formatDate(iso: string) {
 export default function BlogList() {
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
+  const [session, setSession] = useState<Session | null>(null);
 
   useEffect(() => {
     supabase.from('articles').select('*').order('published_at', { ascending: false })
       .then(({ data }) => { setArticles(data ?? []); setLoading(false); });
+    supabase.auth.getSession().then(({ data }) => setSession(data.session));
   }, []);
 
   return (
@@ -43,14 +46,16 @@ export default function BlogList() {
         }}>
           Writing
         </span>
-        <Link to="/write" style={{
-          fontFamily: 'Inter, sans-serif', fontSize: '12px',
-          letterSpacing: '0.08em', textTransform: 'uppercase',
-          color: '#faf9f7', background: '#68142b',
-          padding: '6px 16px', opacity: 0.9,
-        }}>
-          New Post
-        </Link>
+        {session && (
+          <Link to="/write" style={{
+            fontFamily: 'Inter, sans-serif', fontSize: '12px',
+            letterSpacing: '0.08em', textTransform: 'uppercase',
+            color: '#faf9f7', background: '#68142b',
+            padding: '6px 16px', opacity: 0.9,
+          }}>
+            New Post
+          </Link>
+        )}
       </nav>
 
       {/* Content */}
