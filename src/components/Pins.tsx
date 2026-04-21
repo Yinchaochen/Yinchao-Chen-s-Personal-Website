@@ -92,7 +92,7 @@ function PinIcon({ section, onHover, onClick, visible }: {
           position: 'absolute',
           inset: 0,
           borderRadius: '50%',
-          background: `radial-gradient(circle, ${color}66 0%, ${color}33 45%, transparent 75%)`,
+          background: `radial-gradient(circle, #ffcc4488 0%, #ffaa0044 45%, transparent 72%)`,
           transformOrigin: 'center',
           pointerEvents: 'none',
         }}
