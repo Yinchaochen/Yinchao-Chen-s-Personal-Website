@@ -24,13 +24,18 @@ function SectionContent({ id }: { id: string }) {
           ? 'Von Software-Engineering in China bis zur Programmierpraxis in Deutschland — Code ist meine kreative Sprache.'
           : 'From software engineering classrooms in China to coding practice in Germany, code has always been my creative language.'}
       </p>
-      <a
-        href="https://uchia.io/" target="_blank" rel="noopener noreferrer"
-        className="font-display fs-sm"
-        style={{ display:'inline-block', marginTop:'12px', fontStyle:'italic', fontWeight:700, color:'inherit', textDecoration:'underline' }}
-      >
-        uchia.io ↗
-      </a>
+      <div style={{ display:'flex', flexDirection:'column', gap:'6px', marginTop:'12px' }}>
+        <a href="https://uchia.io/" target="_blank" rel="noopener noreferrer"
+          className="font-display fs-sm"
+          style={{ fontStyle:'italic', fontWeight:700, color:'inherit', textDecoration:'underline' }}>
+          uchia.io ↗
+        </a>
+        <a href="https://github.com/Yinchaochen" target="_blank" rel="noopener noreferrer"
+          className="font-display fs-sm"
+          style={{ fontStyle:'italic', fontWeight:700, color:'inherit', textDecoration:'underline' }}>
+          github.com/Yinchaochen ↗
+        </a>
+      </div>
       <div style={{ display:'flex', gap:'6px', flexWrap:'wrap', marginTop:'10px' }}>
         {['React','TypeScript','Node.js','Three.js'].map(t => (
           <span key={t} style={{ fontSize:'max(10px, 0.65vw)', fontFamily:'monospace', background:'rgba(0,1,141,0.1)', color:'#00018d', padding:'2px 8px', borderRadius:'12px' }}>{t}</span>
@@ -72,10 +77,32 @@ function SectionContent({ id }: { id: string }) {
       </p>
       <a
         href="https://www.youtube.com/@LisumChen" target="_blank" rel="noopener noreferrer"
-        className="font-display fs-sm"
-        style={{ display:'inline-block', marginTop:'12px', fontStyle:'italic', fontWeight:700, color:'inherit', textDecoration:'underline' }}
+        style={{
+          display: 'flex', alignItems: 'center', gap: '16px',
+          marginTop: '14px', padding: '18px 20px',
+          background: 'linear-gradient(135deg, #68142b 0%, #c0485a 100%)',
+          textDecoration: 'none',
+          transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+        }}
+        onMouseEnter={e => {
+          (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)';
+          (e.currentTarget as HTMLElement).style.boxShadow = '0 8px 24px rgba(104,20,43,0.35)';
+        }}
+        onMouseLeave={e => {
+          (e.currentTarget as HTMLElement).style.transform = 'translateY(0)';
+          (e.currentTarget as HTMLElement).style.boxShadow = 'none';
+        }}
       >
-        @LisumChen ↗
+        <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="#fafafa"><polygon points="5,3 19,12 5,21"/></svg>
+        </div>
+        <div>
+          <p className="font-body fs-xs" style={{ color: '#fafafa', opacity: 0.7, marginBottom: '3px', letterSpacing: '0.08em', textTransform: 'uppercase', fontSize: 'max(9px, 0.6vw)' }}>YouTube</p>
+          <p className="font-display fs-sm" style={{ color: '#fafafa', fontStyle: 'italic', fontWeight: 700 }}>@LisumChen</p>
+          <p className="font-body fs-xs" style={{ color: '#fafafa', opacity: 0.7, marginTop: '3px', fontSize: 'max(9px, 0.6vw)' }}>
+            {lang === 'zh' ? '哲学 · 人生故事 · 跨文化思考' : lang === 'de' ? 'Philosophie · Lebensgeschichten' : 'Philosophy · Life Stories · Cross-cultural Thinking'}
+          </p>
+        </div>
       </a>
     </div>
   );
@@ -153,7 +180,7 @@ export default function Accordion() {
   useEffect(() => {
     if (!wrapperRef.current || !iconPlusRef.current) return;
     if (open) {
-      gsap.to(wrapperRef.current, { maxHeight: 600, duration: 0.75, ease: 'power2.inOut' });
+      gsap.to(wrapperRef.current, { maxHeight: 800, duration: 0.75, ease: 'power2.inOut' });
       gsap.to(iconPlusRef.current, { scaleY: 0, duration: 0.4, ease: 'power2.inOut' });
     } else {
       gsap.to(wrapperRef.current, { maxHeight: 0, duration: 0.6, ease: 'power2.inOut' });
@@ -171,9 +198,9 @@ export default function Accordion() {
         bottom: 'calc(var(--grid-val) * 0.5vw)',
         left: 'calc(var(--grid-val) * 1vw)',
         zIndex: 20,
-        width: 'calc(var(--grid-val) * 6.5vw)',
-        minWidth: '220px',
-        maxWidth: '340px',
+        width: 'calc(var(--grid-val) * 9vw)',
+        minWidth: '260px',
+        maxWidth: '420px',
         background: theme.bg,
         border: `2px solid ${theme.border}`,
         color: theme.border,
