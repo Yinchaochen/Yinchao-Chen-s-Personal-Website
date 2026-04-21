@@ -1,4 +1,5 @@
 import { useRef, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import gsap from 'gsap';
 import { useApp } from '../context/AppContext';
 
@@ -14,6 +15,7 @@ const THEMES: Record<string, { bg: string; border: string }> = {
 /* ── Full detail content per section ─────────────────── */
 function SectionContent({ id }: { id: string }) {
   const { lang } = useApp();
+  const navigate = useNavigate();
 
   if (id === 'programming') return (
     <div>
@@ -125,6 +127,37 @@ function SectionContent({ id }: { id: string }) {
             </div>
           </div>
         ))}
+      </div>
+      {/* Blog entry point */}
+      <div style={{ marginTop:'14px', display:'flex', gap:'8px' }}>
+        <button
+          onClick={() => navigate('/blog')}
+          className="font-body fs-xs"
+          style={{
+            flex:1, padding:'8px 0', border:'1px solid rgba(68,0,141,0.35)',
+            background:'transparent', color:'#44008d', cursor:'pointer',
+            fontSize:'max(10px,0.65vw)', letterSpacing:'0.06em', textTransform:'uppercase',
+            transition:'background 0.2s',
+          }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background='rgba(68,0,141,0.08)'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background='transparent'; }}
+        >
+          {lang==='zh'?'阅读文章':lang==='de'?'Lesen':'Read'}
+        </button>
+        <button
+          onClick={() => navigate('/write')}
+          className="font-body fs-xs"
+          style={{
+            flex:1, padding:'8px 0', border:'none',
+            background:'#44008d', color:'#edd7ff', cursor:'pointer',
+            fontSize:'max(10px,0.65vw)', letterSpacing:'0.06em', textTransform:'uppercase',
+            transition:'opacity 0.2s',
+          }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity='0.8'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity='1'; }}
+        >
+          {lang==='zh'?'写作':lang==='de'?'Schreiben':'Write'}
+        </button>
       </div>
     </div>
   );

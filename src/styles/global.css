@@ -139,3 +139,51 @@ h1, h2, h3, h4, h5, h6 {
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(104, 20, 43, .25); border-radius: 2px; }
+
+/* ─── Blog / Editor styles ───────────────────────────── */
+.blog-content, .write-editor {
+  font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  line-height: 1.85;
+  color: #2c2e2c;
+}
+.blog-content p, .write-editor p { margin-bottom: 1.25em; }
+.blog-content h1, .write-editor h1 {
+  font-family: 'Libre Baskerville', Georgia, serif;
+  font-size: clamp(22px, 2.8vw, 32px);
+  font-style: italic; font-weight: 700;
+  color: #68142b; line-height: 1.2;
+  margin: 2em 0 0.75em;
+}
+.blog-content h2, .write-editor h2 {
+  font-family: 'Libre Baskerville', Georgia, serif;
+  font-size: clamp(18px, 2.2vw, 26px);
+  font-style: italic; font-weight: 700;
+  color: #68142b; line-height: 1.25;
+  margin: 1.75em 0 0.65em;
+}
+.blog-content h3, .write-editor h3 {
+  font-family: 'Libre Baskerville', Georgia, serif;
+  font-size: clamp(15px, 1.6vw, 20px);
+  font-weight: 700; color: #2c2e2c;
+  margin: 1.5em 0 0.5em;
+}
+.blog-content blockquote, .write-editor blockquote {
+  border-left: 3px solid rgba(104,20,43,0.3);
+  margin: 1.5em 0; padding: 0.25em 0 0.25em 1.25em;
+  font-style: italic; color: rgba(44,46,44,0.7);
+}
+.blog-content ul, .write-editor ul { list-style: disc; padding-left: 1.5em; margin-bottom: 1.25em; }
+.blog-content ol, .write-editor ol { list-style: decimal; padding-left: 1.5em; margin-bottom: 1.25em; }
+.blog-content li, .write-editor li { margin-bottom: 0.4em; }
+.blog-content img, .write-editor img { max-width: 100%; margin: 1.5em 0; display: block; }
+.blog-content hr, .write-editor hr {
+  border: none; border-top: 1px solid rgba(44,46,44,0.12);
+  margin: 2.5em 0;
+}
+.blog-content a { color: #68142b; text-decoration: underline; }
+.write-editor p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: rgba(44,46,44,0.3);
+  pointer-events: none; float: left; height: 0;
+}
