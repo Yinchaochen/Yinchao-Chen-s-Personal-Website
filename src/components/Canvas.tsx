@@ -91,6 +91,13 @@ const frag = `
     vec4 colorA = inA ? texture2D(uTexA, uvA) : bg;
     vec4 colorB = inB ? texture2D(uTexB, uvB) : bg;
     float eased = smoothstep(0.0, 1.0, clamp(uBlend, 0.0, 1.0));
+    float transitionPhase = smoothstep(0.015, 0.08, eased);
+
+    if (transitionPhase <= 0.0) {
+      gl_FragColor = colorA;
+      return;
+    }
+
     float growth = pow(eased, 1.35);
 
     vec2 centered = vUv - 0.5;
@@ -104,15 +111,15 @@ const frag = `
     float ripple = sin((radial - growth * 0.9) * 28.0) * exp(-radial * 6.5) * 0.015;
 
     float frontier = growth * 1.18;
-    frontier += (broadFlow - 0.5) * (0.16 + 0.08 * eased);
-    frontier += (fineFlow - 0.5) * 0.07;
-    frontier += ripple;
+    frontier += (broadFlow - 0.5) * (0.16 + 0.08 * eased) * transitionPhase;
+    frontier += (fineFlow - 0.5) * 0.07 * transitionPhase;
+    frontier += ripple * transitionPhase;
 
     float feather = mix(0.08, 0.14, eased);
-    float revealMask = 1.0 - smoothstep(frontier - feather, frontier + feather, radial);
+    float revealMask = (1.0 - smoothstep(frontier - feather, frontier + feather, radial)) * transitionPhase;
 
-    float edgeBand = smoothstep(feather * 2.4, 0.0, abs(radial - frontier));
-    float diffusionCloud = smoothstep(frontier + 0.22, frontier - 0.02, radial) * (1.0 - revealMask);
+    float edgeBand = smoothstep(feather * 2.4, 0.0, abs(radial - frontier)) * transitionPhase;
+    float diffusionCloud = smoothstep(frontier + 0.22, frontier - 0.02, radial) * (1.0 - revealMask) * transitionPhase;
 
     vec2 flowDir = normalize(aspectCentered + vec2(0.0001));
     vec2 inkDrift = flowDir * edgeBand * (0.008 + 0.022 * eased);
