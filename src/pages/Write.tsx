@@ -162,7 +162,7 @@ export default function Write() {
   /* Load existing article for editing */
   useEffect(() => {
     if (!articleId || !editor) return;
-    supabase.from('articles').select('*').eq('id', articleId).single().then(({ data }) => {
+    supabase.from('articles').select('*').eq('id', articleId).is('deleted_at', null).single().then(({ data }) => {
       if (!data) return;
       setTitle(data.title);
       setExistingSlug(data.slug);
@@ -243,12 +243,6 @@ export default function Write() {
     setTimeout(() => setSaved(false), 2000);
   };
 
-  const handleDelete = async () => {
-    if (!articleId || !confirm('Delete this post?')) return;
-    await supabase.from('articles').delete().eq('id', articleId);
-    navigate('/blog');
-  };
-
   /* Loading auth */
   if (session === undefined) return null;
   if (!session) return <LoginForm onLogin={() => supabase.auth.getSession().then(({ data }) => setSession(data.session))} />;
@@ -273,20 +267,10 @@ export default function Write() {
           fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#68142b',
           letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.7,
         }}>
-          ← Writing
+          &larr; Blog
         </Link>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          {articleId && (
-            <button onClick={handleDelete} style={{
-              fontFamily: 'Inter, sans-serif', fontSize: '12px',
-              letterSpacing: '0.08em', textTransform: 'uppercase',
-              color: '#c0485a', opacity: 0.7, cursor: 'pointer',
-              background: 'none', border: 'none',
-            }}>
-              Delete
-            </button>
-          )}
           {articleId && (
             <Link to={`/blog/${existingSlug}`} target="_blank" style={{
               fontFamily: 'Inter, sans-serif', fontSize: '12px',

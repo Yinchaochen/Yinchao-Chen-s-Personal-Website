@@ -19,7 +19,7 @@ export default function BlogList() {
   const [session, setSession] = useState<Session | null>(null);
 
   useEffect(() => {
-    supabase.from('articles').select('*').order('published_at', { ascending: false })
+    supabase.from('articles').select('*').is('deleted_at', null).order('published_at', { ascending: false })
       .then(({ data }) => { setArticles(data ?? []); setLoading(false); });
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
   }, []);
@@ -44,7 +44,7 @@ export default function BlogList() {
           fontFamily: "'Libre Baskerville', Georgia, serif",
           fontSize: '15px', fontStyle: 'italic', fontWeight: 700, color: '#68142b',
         }}>
-          Writing
+          Blog
         </span>
         {session && (
           <Link to="/write" style={{

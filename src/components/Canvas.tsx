@@ -45,6 +45,19 @@ const frag = `
     return p + 0.5;
   }
 
+  float hash21(vec2 p) {
+    p = fract(p * vec2(123.34, 345.45));
+    p += dot(p, p + 34.345);
+    return fract(p.x * p.y);
+  }
+
+  float seamNoise(vec2 uv) {
+    float wave = sin(uv.y * 18.0 + uv.x * 4.0) * 0.012;
+    wave += sin(uv.y * 41.0 - uv.x * 6.0) * 0.008;
+    wave += (hash21(vec2(floor(uv.y * 28.0), floor(uv.x * 14.0))) - 0.5) * 0.012;
+    return wave;
+  }
+
   vec4 bg = vec4(0.831, 0.314, 0.329, 1.0);
 
   void main() {
@@ -56,8 +69,41 @@ const frag = `
 
     vec4 colorA = inA ? texture2D(uTexA, uvA) : bg;
     vec4 colorB = inB ? texture2D(uTexB, uvB) : bg;
+    float eased = smoothstep(0.0, 1.0, clamp(uBlend, 0.0, 1.0));
+    float centerBias = 1.0 - pow(abs(vUv.y - 0.5) * 2.0, 1.45);
+    centerBias = clamp(centerBias, 0.0, 1.0);
 
-    gl_FragColor = mix(colorA, colorB, uBlend);
+    float crackNoise = seamNoise(vUv) * eased;
+    float crackHalfWidth = eased * (0.012 + 0.24 * centerBias);
+    crackHalfWidth += smoothstep(0.72, 1.0, eased) * 0.5;
+    crackHalfWidth += crackNoise * (0.05 + 0.08 * centerBias);
+    crackHalfWidth = clamp(crackHalfWidth, 0.0, 0.5);
+
+    float centerDist = abs(vUv.x - 0.5);
+    float revealVisibility = smoothstep(0.04, 0.12, eased);
+    float revealMask = (1.0 - smoothstep(crackHalfWidth, crackHalfWidth + 0.022, centerDist)) * revealVisibility;
+
+    float side = vUv.x < 0.5 ? 1.0 : -1.0;
+    float flapPush = eased * (0.055 + 0.18 * centerBias);
+    vec2 tornUvA = uvA;
+    tornUvA.x += side * flapPush;
+    tornUvA.y += side * crackNoise * 0.35;
+
+    bool tornInA = tornUvA.x >= 0.0 && tornUvA.x <= 1.0 && tornUvA.y >= 0.0 && tornUvA.y <= 1.0;
+    vec4 tornColorA = tornInA ? texture2D(uTexA, tornUvA) : bg;
+
+    float edgeDistance = abs(centerDist - crackHalfWidth);
+    float seamHighlight = smoothstep(0.035, 0.0, edgeDistance) * revealVisibility;
+    float seamShadow = smoothstep(0.08, 0.01, edgeDistance) * (1.0 - revealMask) * eased;
+
+    vec4 openedColor = tornColorA;
+    openedColor.rgb *= 1.0 - seamShadow * 0.24;
+    openedColor.rgb += vec3(0.15, 0.04, 0.06) * seamShadow * 0.55;
+
+    vec4 finalColor = mix(openedColor, colorB, revealMask);
+    finalColor.rgb += vec3(0.98, 0.90, 0.80) * seamHighlight * 0.18 * eased;
+
+    gl_FragColor = finalColor;
   }
 `;
 
@@ -99,8 +145,8 @@ function Background({
     gsap.killTweensOf(blendObj.current);
     gsap.to(blendObj.current, {
       v: 1,
-      duration: 0.9,
-      ease: 'power2.inOut',
+      duration: 1.05,
+      ease: 'power3.inOut',
       onUpdate: () => {
         if (matRef.current) {
           matRef.current.uniforms.uBlend.value = blendObj.current.v;

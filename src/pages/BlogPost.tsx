@@ -34,7 +34,7 @@ export default function BlogPost() {
 
   useEffect(() => {
     if (!slug) return;
-    supabase.from('articles').select('*').eq('slug', slug).single()
+    supabase.from('articles').select('*').eq('slug', slug).is('deleted_at', null).single()
       .then(({ data, error }) => {
         if (error || !data) { navigate('/blog'); return; }
         setArticle(data);
@@ -90,7 +90,7 @@ export default function BlogPost() {
           fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#68142b',
           letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.7,
         }}>
-          ← Writing
+          &larr; Blog
         </Link>
         <Link to="/" style={{
           fontFamily: "'Libre Baskerville', Georgia, serif",

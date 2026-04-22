@@ -13,4 +13,5 @@ export interface Article {
   cover_image: string | null;
   published_at: string;
   updated_at: string;
+  deleted_at: string | null;
 }
