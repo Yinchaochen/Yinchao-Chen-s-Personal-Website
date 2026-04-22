@@ -126,6 +126,7 @@ export default function Write() {
   const [saved, setSaved] = useState(false);
   const [existingSlug, setExistingSlug] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageInsertPosRef = useRef<number | null>(null);
 
   const editor = useEditor({
     extensions: [
@@ -159,14 +160,37 @@ export default function Write() {
     });
   }, [articleId, editor]);
 
-  const handleImageUpload = useCallback(async (file: File) => {
+  const handleImageUpload = useCallback(async (files: FileList | File[]) => {
     if (!editor) return;
-    const ext = file.name.split('.').pop() ?? 'jpg';
-    const path = `${Date.now()}.${ext}`;
-    const { data, error } = await supabase.storage.from('article-images').upload(path, file);
-    if (error) { alert('Image upload failed: ' + error.message); return; }
-    const { data: { publicUrl } } = supabase.storage.from('article-images').getPublicUrl(data.path);
-    editor.chain().focus().setImage({ src: publicUrl }).run();
+    let insertPos = imageInsertPosRef.current ?? editor.state.selection.to;
+
+    for (const file of Array.from(files)) {
+      const ext = file.name.split('.').pop() ?? 'jpg';
+      const safeName = file.name
+        .replace(/\.[^.]+$/, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '') || 'image';
+      const path = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safeName}.${ext}`;
+      const { data, error } = await supabase.storage.from('article-images').upload(path, file);
+      if (error) {
+        alert(`Image upload failed for "${file.name}": ${error.message}`);
+        return;
+      }
+
+      const { data: { publicUrl } } = supabase.storage.from('article-images').getPublicUrl(data.path);
+      editor.chain().focus().insertContentAt(insertPos, [
+        { type: 'image', attrs: { src: publicUrl } },
+        { type: 'paragraph' },
+      ]).run();
+      insertPos = editor.state.selection.to;
+      imageInsertPosRef.current = insertPos;
+    }
+  }, [editor]);
+
+  const openImagePicker = useCallback(() => {
+    if (editor) imageInsertPosRef.current = editor.state.selection.to;
+    fileInputRef.current?.click();
   }, [editor]);
 
   const save = async () => {
@@ -206,8 +230,8 @@ export default function Write() {
     <div style={{ position: 'fixed', inset: 0, overflowY: 'auto', background: '#faf9f7' }}>
       {/* Hidden file input for image upload */}
       <input
-        ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }}
-        onChange={e => { const f = e.target.files?.[0]; if (f) handleImageUpload(f); e.target.value = ''; }}
+        ref={fileInputRef} type="file" accept="image/*" multiple style={{ display: 'none' }}
+        onChange={e => { const files = e.target.files; if (files?.length) handleImageUpload(files); e.target.value = ''; }}
       />
 
       {/* Nav */}
@@ -265,7 +289,7 @@ export default function Write() {
       </nav>
 
       {/* Toolbar */}
-      <Toolbar editor={editor} onImageUpload={() => fileInputRef.current?.click()} />
+      <Toolbar editor={editor} onImageUpload={openImagePicker} />
 
       {/* Editor */}
       <main style={{ maxWidth: '720px', margin: '0 auto', padding: '48px 40px 120px' }}>
