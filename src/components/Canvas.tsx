@@ -51,11 +51,32 @@ const frag = `
     return fract(p.x * p.y);
   }
 
-  float seamNoise(vec2 uv) {
-    float wave = sin(uv.y * 18.0 + uv.x * 4.0) * 0.012;
-    wave += sin(uv.y * 41.0 - uv.x * 6.0) * 0.008;
-    wave += (hash21(vec2(floor(uv.y * 28.0), floor(uv.x * 14.0))) - 0.5) * 0.012;
-    return wave;
+  float noise21(vec2 p) {
+    vec2 i = floor(p);
+    vec2 f = fract(p);
+
+    float a = hash21(i);
+    float b = hash21(i + vec2(1.0, 0.0));
+    float c = hash21(i + vec2(0.0, 1.0));
+    float d = hash21(i + vec2(1.0, 1.0));
+
+    vec2 u = f * f * (3.0 - 2.0 * f);
+
+    return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
+  }
+
+  float fbm(vec2 p) {
+    float value = 0.0;
+    float amplitude = 0.5;
+    mat2 rot = mat2(1.6, 1.2, -1.2, 1.6);
+
+    for (int i = 0; i < 5; i++) {
+      value += amplitude * noise21(p);
+      p = rot * p + 9.7;
+      amplitude *= 0.52;
+    }
+
+    return value;
   }
 
   vec4 bg = vec4(0.831, 0.314, 0.329, 1.0);
@@ -70,40 +91,44 @@ const frag = `
     vec4 colorA = inA ? texture2D(uTexA, uvA) : bg;
     vec4 colorB = inB ? texture2D(uTexB, uvB) : bg;
     float eased = smoothstep(0.0, 1.0, clamp(uBlend, 0.0, 1.0));
-    float centerBias = 1.0 - pow(abs(vUv.y - 0.5) * 2.0, 1.45);
-    centerBias = clamp(centerBias, 0.0, 1.0);
+    float growth = pow(eased, 1.35);
 
-    float crackNoise = seamNoise(vUv) * eased;
-    float crackHalfWidth = eased * (0.012 + 0.24 * centerBias);
-    crackHalfWidth += smoothstep(0.72, 1.0, eased) * 0.5;
-    crackHalfWidth += crackNoise * (0.05 + 0.08 * centerBias);
-    crackHalfWidth = clamp(crackHalfWidth, 0.0, 0.5);
+    vec2 centered = vUv - 0.5;
+    vec2 aspectCentered = vec2(centered.x * uVpAspect, centered.y);
+    float maxRadius = length(vec2(0.5 * uVpAspect, 0.5));
+    float radial = length(aspectCentered) / maxRadius;
+    float angle = atan(aspectCentered.y, aspectCentered.x);
 
-    float centerDist = abs(vUv.x - 0.5);
-    float revealVisibility = smoothstep(0.04, 0.12, eased);
-    float revealMask = (1.0 - smoothstep(crackHalfWidth, crackHalfWidth + 0.022, centerDist)) * revealVisibility;
+    float broadFlow = fbm(aspectCentered * 3.8 + vec2(angle * 0.65, growth * 1.1));
+    float fineFlow = fbm(aspectCentered * 7.5 - vec2(growth * 1.8, angle * 0.4));
+    float ripple = sin((radial - growth * 0.9) * 28.0) * exp(-radial * 6.5) * 0.015;
 
-    float side = vUv.x < 0.5 ? 1.0 : -1.0;
-    float flapPush = eased * (0.055 + 0.18 * centerBias);
-    vec2 tornUvA = uvA;
-    tornUvA.x += side * flapPush;
-    tornUvA.y += side * crackNoise * 0.35;
+    float frontier = growth * 1.18;
+    frontier += (broadFlow - 0.5) * (0.16 + 0.08 * eased);
+    frontier += (fineFlow - 0.5) * 0.07;
+    frontier += ripple;
 
-    bool tornInA = tornUvA.x >= 0.0 && tornUvA.x <= 1.0 && tornUvA.y >= 0.0 && tornUvA.y <= 1.0;
-    vec4 tornColorA = tornInA ? texture2D(uTexA, tornUvA) : bg;
+    float feather = mix(0.08, 0.14, eased);
+    float revealMask = 1.0 - smoothstep(frontier - feather, frontier + feather, radial);
 
-    float edgeDistance = abs(centerDist - crackHalfWidth);
-    float seamHighlight = smoothstep(0.035, 0.0, edgeDistance) * revealVisibility;
-    float seamShadow = smoothstep(0.08, 0.01, edgeDistance) * (1.0 - revealMask) * eased;
+    float edgeBand = smoothstep(feather * 2.4, 0.0, abs(radial - frontier));
+    float diffusionCloud = smoothstep(frontier + 0.22, frontier - 0.02, radial) * (1.0 - revealMask);
 
-    vec4 openedColor = tornColorA;
-    openedColor.rgb *= 1.0 - seamShadow * 0.24;
-    openedColor.rgb += vec3(0.15, 0.04, 0.06) * seamShadow * 0.55;
+    vec2 flowDir = normalize(aspectCentered + vec2(0.0001));
+    vec2 inkDrift = flowDir * edgeBand * (0.008 + 0.022 * eased);
+    inkDrift += vec2(fineFlow - 0.5, broadFlow - 0.5) * 0.01 * eased;
 
-    vec4 finalColor = mix(openedColor, colorB, revealMask);
-    finalColor.rgb += vec3(0.98, 0.90, 0.80) * seamHighlight * 0.18 * eased;
+    vec2 diffusedUvA = uvA + inkDrift;
+    bool diffusedInA = diffusedUvA.x >= 0.0 && diffusedUvA.x <= 1.0 && diffusedUvA.y >= 0.0 && diffusedUvA.y <= 1.0;
+    vec4 diffusedColorA = diffusedInA ? texture2D(uTexA, diffusedUvA) : bg;
 
-    gl_FragColor = finalColor;
+    vec4 baseColor = mix(diffusedColorA, colorB, revealMask);
+    baseColor.rgb *= 1.0 - diffusionCloud * 0.14;
+    baseColor.rgb += vec3(0.10, 0.04, 0.06) * diffusionCloud * 0.32;
+    baseColor.rgb -= vec3(0.06, 0.02, 0.03) * edgeBand * 0.28;
+    baseColor.rgb += vec3(0.12, 0.06, 0.08) * edgeBand * 0.14 * eased;
+
+    gl_FragColor = baseColor;
   }
 `;
 
@@ -145,8 +170,8 @@ function Background({
     gsap.killTweensOf(blendObj.current);
     gsap.to(blendObj.current, {
       v: 1,
-      duration: 1.05,
-      ease: 'power3.inOut',
+      duration: 1.45,
+      ease: 'sine.inOut',
       onUpdate: () => {
         if (matRef.current) {
           matRef.current.uniforms.uBlend.value = blendObj.current.v;
