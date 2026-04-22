@@ -1,22 +1,19 @@
 import { useRef, useMemo, useEffect } from 'react';
-import { Canvas as R3FCanvas, useFrame, useThree } from '@react-three/fiber';
-import { useTexture } from '@react-three/drei';
+import { Canvas as R3FCanvas, useFrame, useThree, useLoader } from '@react-three/fiber';
 import * as THREE from 'three';
 import gsap from 'gsap';
 
-/* ─── Scene image paths ───────────────────────────────── */
 const sceneImages = {
-  main:        '/images/scene-main.jpg',
+  main: '/images/scene-main.jpg',
   programming: '/images/scene-programming.png',
   photography: '/images/scene-photography.png',
-  youtube:     '/images/scene-youtube.png',
-  journey:     '/images/scene-journey.png',
-  social:      '/images/scene-social.png',
+  youtube: '/images/scene-youtube.png',
+  journey: '/images/scene-journey.png',
+  social: '/images/scene-social.png',
 } as const;
 
 type SceneKey = keyof typeof sceneImages;
 
-/* ─── Shaders — UV + crossfade ───────────────────────── */
 const vert = `
   varying vec2 vUv;
   void main() {
@@ -64,42 +61,78 @@ const frag = `
   }
 `;
 
-/* ─── Background with crossfade ───────────────────────── */
 function Background({
-  mouseRef, activeSceneId,
+  mouseRef,
+  activeSceneId,
 }: {
   mouseRef: React.MutableRefObject<THREE.Vector2>;
   activeSceneId: string | null;
 }) {
-  const matRef   = useRef<THREE.ShaderMaterial>(null);
+  const matRef = useRef<THREE.ShaderMaterial>(null);
   const blendObj = useRef({ v: 0 });
-
-  const textures = useTexture(sceneImages);
-  /* LinearSRGBColorSpace = no GPU linearisation; combined with linear renderer
-     output this gives straight-through sRGB display — original file colours */
-  Object.values(textures).forEach(t => { t.colorSpace = THREE.LinearSRGBColorSpace; });
+  const textureLoaderRef = useRef<THREE.TextureLoader | null>(null);
+  const mainTexture = useLoader(THREE.TextureLoader, sceneImages.main);
+  const textureCacheRef = useRef<Partial<Record<SceneKey, THREE.Texture>>>({});
 
   const { viewport } = useThree();
   const vpAspect = viewport.width / viewport.height;
 
-  const getAspect = (tex: THREE.Texture) => {
-    const img = tex.image as HTMLImageElement | HTMLCanvasElement | ImageBitmap | null;
+  const getAspect = (texture: THREE.Texture) => {
+    const img = texture.image as HTMLImageElement | HTMLCanvasElement | ImageBitmap | null;
     if (!img) return 16 / 9;
-    const w = 'naturalWidth' in img ? img.naturalWidth : img.width;
-    const h = 'naturalHeight' in img ? img.naturalHeight : img.height;
-    return h > 0 ? w / h : 16 / 9;
+    const width = 'naturalWidth' in img ? img.naturalWidth : img.width;
+    const height = 'naturalHeight' in img ? img.naturalHeight : img.height;
+    return height > 0 ? width / height : 16 / 9;
   };
 
+  const prepareTexture = (texture: THREE.Texture) => {
+    texture.colorSpace = THREE.LinearSRGBColorSpace;
+  };
+
+  const transitionToTexture = (texture: THREE.Texture) => {
+    if (!matRef.current) return;
+
+    matRef.current.uniforms.uTexB.value = texture;
+    matRef.current.uniforms.uAspectB.value = getAspect(texture);
+    blendObj.current.v = 0;
+
+    gsap.killTweensOf(blendObj.current);
+    gsap.to(blendObj.current, {
+      v: 1,
+      duration: 0.9,
+      ease: 'power2.inOut',
+      onUpdate: () => {
+        if (matRef.current) {
+          matRef.current.uniforms.uBlend.value = blendObj.current.v;
+        }
+      },
+      onComplete: () => {
+        if (matRef.current) {
+          matRef.current.uniforms.uTexA.value = texture;
+          matRef.current.uniforms.uAspectA.value = getAspect(texture);
+          matRef.current.uniforms.uBlend.value = 0;
+          blendObj.current.v = 0;
+        }
+      },
+    });
+  };
+
+  prepareTexture(mainTexture);
+  textureCacheRef.current.main = mainTexture;
+
+  if (!textureLoaderRef.current) {
+    textureLoaderRef.current = new THREE.TextureLoader();
+  }
+
   const uniforms = useMemo(() => ({
-    uTexA:     { value: textures.main },
-    uTexB:     { value: textures.main },
-    uBlend:    { value: 0 },
-    uMouse:    { value: new THREE.Vector2() },
+    uTexA: { value: mainTexture },
+    uTexB: { value: mainTexture },
+    uBlend: { value: 0 },
+    uMouse: { value: new THREE.Vector2() },
     uVpAspect: { value: vpAspect },
-    uAspectA:  { value: getAspect(textures.main) },
-    uAspectB:  { value: getAspect(textures.main) },
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), []);
+    uAspectA: { value: getAspect(mainTexture) },
+    uAspectB: { value: getAspect(mainTexture) },
+  }), [mainTexture, vpAspect]);
 
   useFrame(() => {
     if (matRef.current) {
@@ -110,33 +143,31 @@ function Background({
 
   useEffect(() => {
     if (!matRef.current) return;
-    const key: SceneKey = (activeSceneId && activeSceneId in textures)
-      ? (activeSceneId as SceneKey)
-      : 'main';
-    const next = textures[key];
 
-    matRef.current.uniforms.uTexB.value    = next;
-    matRef.current.uniforms.uAspectB.value = getAspect(next);
-    blendObj.current.v = 0;
+    const key: SceneKey =
+      activeSceneId && activeSceneId in sceneImages
+        ? (activeSceneId as SceneKey)
+        : 'main';
 
-    gsap.killTweensOf(blendObj.current);
-    gsap.to(blendObj.current, {
-      v: 1,
-      duration: 0.9,
-      ease: 'power2.inOut',
-      onUpdate: () => {
-        if (matRef.current) matRef.current.uniforms.uBlend.value = blendObj.current.v;
-      },
-      onComplete: () => {
-        if (matRef.current) {
-          matRef.current.uniforms.uTexA.value    = next;
-          matRef.current.uniforms.uAspectA.value = getAspect(next);
-          matRef.current.uniforms.uBlend.value   = 0;
-          blendObj.current.v = 0;
-        }
-      },
+    const cachedTexture = textureCacheRef.current[key];
+    if (cachedTexture) {
+      transitionToTexture(cachedTexture);
+      return;
+    }
+
+    let cancelled = false;
+
+    textureLoaderRef.current?.load(sceneImages[key], (texture) => {
+      if (cancelled) return;
+      prepareTexture(texture);
+      textureCacheRef.current[key] = texture;
+      transitionToTexture(texture);
     });
-  }, [activeSceneId]); // eslint-disable-line
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeSceneId]);
 
   return (
     <mesh position={[0, 0, 0]}>
@@ -151,11 +182,11 @@ function Background({
   );
 }
 
-/* ─── Scene ───────────────────────────────────────────── */
 function Scene({ activeSceneId }: { activeSceneId: string | null }) {
   const mouseTarget = useRef(new THREE.Vector2());
   const mouseSmooth = useRef(new THREE.Vector2());
   const { gl, pointer } = useThree();
+
   gl.setClearColor(new THREE.Color('#d45054'));
 
   useFrame(() => {
@@ -166,7 +197,6 @@ function Scene({ activeSceneId }: { activeSceneId: string | null }) {
   return <Background mouseRef={mouseSmooth} activeSceneId={activeSceneId} />;
 }
 
-/* ─── Exported wrapper ────────────────────────────────── */
 export default function SceneCanvas({ activeSceneId }: { activeSceneId: string | null }) {
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 1 }}>

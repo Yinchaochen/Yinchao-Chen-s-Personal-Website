@@ -2,6 +2,7 @@ import { useRef, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import gsap from 'gsap';
 import { useApp } from '../context/AppContext';
+import LazyImage from './LazyImage';
 
 /* ── Per-section color theme (exact Max Mara palette) ── */
 const THEMES: Record<string, { bg: string; border: string }> = {
@@ -58,7 +59,11 @@ function SectionContent({ id }: { id: string }) {
       <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'4px', marginTop:'12px' }}>
         {['/images/P1019454.jpg','/images/Blues Moment 03.jpg','/images/P1002527.jpg','/images/P1019576.jpg','/images/P1019780.jpg'].map(src => (
           <a key={src} href={src} target="_blank" rel="noopener noreferrer" style={{ display:'block', aspectRatio:'1', overflow:'hidden' }}>
-            <img src={src} alt="" style={{ width:'100%', height:'100%', objectFit:'cover', transition:'transform 0.3s', display:'block' }}
+            <LazyImage
+              src={src}
+              alt=""
+              containerStyle={{ width:'100%', height:'100%' }}
+              style={{ width:'100%', height:'100%', objectFit:'cover', transition:'transform 0.3s', display:'block' }}
               onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform='scale(1.06)'; }}
               onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform='scale(1)'; }}
             />

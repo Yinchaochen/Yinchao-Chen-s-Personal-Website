@@ -177,6 +177,12 @@ h1, h2, h3, h4, h5, h6 {
 .blog-content ol, .write-editor ol { list-style: decimal; padding-left: 1.5em; margin-bottom: 1.25em; }
 .blog-content li, .write-editor li { margin-bottom: 0.4em; }
 .blog-content img, .write-editor img { max-width: 100%; margin: 1.5em 0; display: block; }
+.blog-content img[data-lazy-blog-image="true"] {
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  background: rgba(104,20,43,0.06);
+}
+.blog-content img[data-lazy-blog-image="true"].is-loaded { opacity: 1; }
 .blog-content hr, .write-editor hr {
   border: none; border-top: 1px solid rgba(44,46,44,0.12);
   margin: 2.5em 0;

@@ -1,12 +1,27 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { supabase, type Article } from '../lib/supabase';
 import type { Session } from '@supabase/supabase-js';
+import LazyImage from '../components/LazyImage';
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-US', {
     year: 'numeric', month: 'long', day: 'numeric',
   });
+}
+
+function enhanceBlogContentImages(html: string) {
+  if (typeof DOMParser === 'undefined') return html;
+
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  doc.querySelectorAll('img').forEach((img) => {
+    img.setAttribute('loading', 'lazy');
+    img.setAttribute('decoding', 'async');
+    img.setAttribute('fetchpriority', 'low');
+    img.setAttribute('data-lazy-blog-image', 'true');
+  });
+
+  return doc.body.innerHTML;
 }
 
 export default function BlogPost() {
@@ -15,6 +30,7 @@ export default function BlogPost() {
   const [article, setArticle] = useState<Article | null>(null);
   const [loading, setLoading] = useState(true);
   const [session, setSession] = useState<Session | null>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!slug) return;
@@ -26,6 +42,31 @@ export default function BlogPost() {
       });
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
   }, [slug, navigate]);
+
+  const htmlContent = useMemo(
+    () => article ? enhanceBlogContentImages(article.content) : '',
+    [article],
+  );
+
+  useEffect(() => {
+    const images = contentRef.current?.querySelectorAll<HTMLImageElement>('img[data-lazy-blog-image="true"]');
+    if (!images?.length) return;
+
+    const cleanups: Array<() => void> = [];
+
+    images.forEach((img) => {
+      const markLoaded = () => img.classList.add('is-loaded');
+      if (img.complete) {
+        markLoaded();
+        return;
+      }
+
+      img.addEventListener('load', markLoaded, { once: true });
+      cleanups.push(() => img.removeEventListener('load', markLoaded));
+    });
+
+    return () => cleanups.forEach((cleanup) => cleanup());
+  }, [htmlContent]);
 
   if (loading) return (
     <div style={{ position: 'fixed', inset: 0, background: '#faf9f7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -89,15 +130,22 @@ export default function BlogPost() {
         </h1>
 
         {article.cover_image && (
-          <img src={article.cover_image} alt="" style={{
-            width: '100%', marginBottom: '48px',
-            display: 'block',
-          }} />
+          <LazyImage
+            src={article.cover_image}
+            alt=""
+            eager
+            containerStyle={{ width: '100%', marginBottom: '48px' }}
+            style={{
+              width: '100%',
+              display: 'block',
+            }}
+          />
         )}
 
         <div
+          ref={contentRef}
           className="blog-content"
-          dangerouslySetInnerHTML={{ __html: article.content }}
+          dangerouslySetInnerHTML={{ __html: htmlContent }}
         />
       </main>
     </div>

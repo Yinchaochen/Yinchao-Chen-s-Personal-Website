@@ -68,6 +68,16 @@ const inputStyle: React.CSSProperties = {
   background: 'transparent', outline: 'none',
 };
 
+function extractImageFilesFromClipboard(event: ClipboardEvent) {
+  const files = Array.from(event.clipboardData?.files ?? []).filter((file) => file.type.startsWith('image/'));
+  if (files.length > 0) return files;
+
+  return Array.from(event.clipboardData?.items ?? [])
+    .filter((item) => item.kind === 'file' && item.type.startsWith('image/'))
+    .map((item) => item.getAsFile())
+    .filter((file): file is File => file !== null);
+}
+
 /* ── Toolbar ──────────────────────────────────────────── */
 function Toolbar({ editor, onImageUpload }: {
   editor: ReturnType<typeof useEditor>;
@@ -192,6 +202,23 @@ export default function Write() {
     if (editor) imageInsertPosRef.current = editor.state.selection.to;
     fileInputRef.current?.click();
   }, [editor]);
+
+  useEffect(() => {
+    if (!editor) return;
+
+    const handlePaste = (event: ClipboardEvent) => {
+      const imageFiles = extractImageFilesFromClipboard(event);
+      if (!imageFiles.length) return;
+
+      imageInsertPosRef.current = editor.state.selection.to;
+      event.preventDefault();
+      void handleImageUpload(imageFiles);
+    };
+
+    const dom = editor.view.dom;
+    dom.addEventListener('paste', handlePaste);
+    return () => dom.removeEventListener('paste', handlePaste);
+  }, [editor, handleImageUpload]);
 
   const save = async () => {
     if (!editor || !title.trim()) { alert('Please add a title.'); return; }
