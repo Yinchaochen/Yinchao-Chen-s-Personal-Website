@@ -1,16 +1,14 @@
 import { useCallback } from 'react';
-import { useLocation } from 'react-router-dom';
 import { useAudioHintBubble } from '../hooks/useAudioHintBubble';
 import { useSiteAudio } from '../context/SiteAudioContext';
 import AudioWaveIcon from './AudioWaveIcon';
 import AudioHintBubble from './AudioHintBubble';
 
 export default function BlogAudio() {
-  const location = useLocation();
-  const { muted, setMuted, audioPlaying, audioBlocked, stopAudioPlayback } = useSiteAudio();
+  const { muted, setMuted, audioPlaying, stopAudioPlayback } = useSiteAudio();
   const showAudioHint = useAudioHintBubble({
-    enabled: !muted && audioBlocked,
-    hintKey: `blog:${location.pathname}`,
+    enabled: !muted && audioPlaying,
+    hintKey: 'blog:audio-toggle',
   });
 
   const toggleMuted = useCallback(() => {
@@ -34,7 +32,7 @@ export default function BlogAudio() {
     >
       <AudioHintBubble
         visible={showAudioHint}
-        text="Click the sound icon to play music."
+        text="You can turn off the music here."
         bottom="2px"
       />
       <button

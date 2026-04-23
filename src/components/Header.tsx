@@ -118,7 +118,7 @@ export default function Header({
         >
           <AudioHintBubble
             visible={showAudioHint}
-            text="Click the sound icon to play music."
+            text="You can turn off the music here."
             top="50%"
           />
           <button

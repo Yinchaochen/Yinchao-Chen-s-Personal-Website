@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect, Suspense, lazy, useMemo } from 'react';
+import { useState, useRef, useCallback, useEffect, Suspense, lazy } from 'react';
 import { useApp, type Section } from './context/AppContext';
 import Loader from './components/Loader';
 import Header from './components/Header';
@@ -20,20 +20,15 @@ export default function App() {
     muted,
     setMuted,
     audioPlaying,
-    audioBlocked,
     stopAudioPlayback,
   } = useSiteAudio();
   const [hoveredId, setHoveredId]   = useState<string | null>(null);
   const [mouseMoved, setMouseMoved] = useState(false);
   const sceneSwitchAudioRef = useRef<HTMLAudioElement | null>(null);
   const sceneCloseAudioRef = useRef<HTMLAudioElement | null>(null);
-  const audioHintKey = useMemo(
-    () => `home:${activeSceneId ?? 'landing'}`,
-    [activeSceneId],
-  );
   const showAudioHint = useAudioHintBubble({
-    enabled: loaded && mouseMoved && !muted && audioBlocked,
-    hintKey: audioHintKey,
+    enabled: loaded && mouseMoved && !muted && audioPlaying,
+    hintKey: 'home:audio-toggle',
   });
 
   useEffect(() => {
