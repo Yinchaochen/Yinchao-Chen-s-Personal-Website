@@ -10,7 +10,7 @@ interface UseManagedAudioPlaybackOptions {
 }
 
 function isAudioEffectivelyPlaying(audio: HTMLAudioElement) {
-  return !audio.paused && !audio.ended && audio.readyState >= 2 && !audio.muted;
+  return !audio.paused && !audio.ended && !audio.muted;
 }
 
 export function useManagedAudioPlayback({
@@ -147,13 +147,12 @@ export function useManagedAudioPlayback({
     window.addEventListener('pageshow', checkPlayback);
     audio.addEventListener('canplay', checkPlayback);
     audio.addEventListener('canplaythrough', checkPlayback);
+    audio.addEventListener('loadeddata', sync);
+    audio.addEventListener('timeupdate', sync);
     audio.addEventListener('play', sync);
     audio.addEventListener('playing', sync);
     audio.addEventListener('pause', sync);
-    audio.addEventListener('waiting', sync);
-    audio.addEventListener('stalled', sync);
     audio.addEventListener('ended', sync);
-    audio.addEventListener('emptied', sync);
 
     return () => {
       window.clearInterval(intervalId);
@@ -161,16 +160,25 @@ export function useManagedAudioPlayback({
       window.removeEventListener('pageshow', checkPlayback);
       audio.removeEventListener('canplay', checkPlayback);
       audio.removeEventListener('canplaythrough', checkPlayback);
+      audio.removeEventListener('loadeddata', sync);
+      audio.removeEventListener('timeupdate', sync);
       audio.removeEventListener('play', sync);
       audio.removeEventListener('playing', sync);
       audio.removeEventListener('pause', sync);
-      audio.removeEventListener('waiting', sync);
-      audio.removeEventListener('stalled', sync);
       audio.removeEventListener('ended', sync);
-      audio.removeEventListener('emptied', sync);
       clearResumeListeners();
     };
   }, [audioRef, checkerIntervalMs, clearResumeListeners, ensurePlayback, muted, syncPlaybackState, volume]);
+
+  useEffect(() => {
+    return () => {
+      const audio = audioRef.current;
+      if (!audio) return;
+
+      audio.pause();
+      audio.currentTime = 0;
+    };
+  }, [audioRef]);
 
   return {
     ensurePlayback,
