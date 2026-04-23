@@ -1,5 +1,4 @@
-const AUDIO_PROMPT_ACK_KEY = 'site-audio-prompt-acknowledged';
-const AUDIO_PROMPT_SESSION_KEY = 'site-audio-session-started';
+const AUDIO_ENTRY_SESSION_KEY = 'site-audio-entry-session-started';
 
 function isExternalEntry() {
   if (typeof window === 'undefined') return false;
@@ -14,20 +13,21 @@ function isExternalEntry() {
   }
 }
 
+export function initializeAudioEntrySession() {
+  if (typeof window === 'undefined') return;
+  window.sessionStorage.setItem(AUDIO_ENTRY_SESSION_KEY, 'true');
+}
+
 export function shouldShowEntryAudioPrompt() {
   if (typeof window === 'undefined') return false;
 
-  const alreadyAcknowledged = window.localStorage.getItem(AUDIO_PROMPT_ACK_KEY) === 'true';
-  const sessionStarted = window.sessionStorage.getItem(AUDIO_PROMPT_SESSION_KEY) === 'true';
+  const sessionStarted = window.sessionStorage.getItem(AUDIO_ENTRY_SESSION_KEY) === 'true';
+  if (sessionStarted) return false;
 
-  if (!sessionStarted) {
-    window.sessionStorage.setItem(AUDIO_PROMPT_SESSION_KEY, 'true');
-  }
-
-  return !alreadyAcknowledged && !sessionStarted && isExternalEntry();
+  window.sessionStorage.setItem(AUDIO_ENTRY_SESSION_KEY, 'true');
+  return isExternalEntry();
 }
 
 export function acknowledgeEntryAudioPrompt() {
-  if (typeof window === 'undefined') return;
-  window.localStorage.setItem(AUDIO_PROMPT_ACK_KEY, 'true');
+  initializeAudioEntrySession();
 }

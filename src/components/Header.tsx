@@ -1,8 +1,9 @@
 import { useRef, useEffect } from 'react';
 import gsap from 'gsap';
 import { useApp } from '../context/AppContext';
+import AudioWaveIcon from './AudioWaveIcon';
 
-export default function Header({ visible }: { visible: boolean }) {
+export default function Header({ visible, audioPlaying }: { visible: boolean; audioPlaying: boolean }) {
   const { lang, setLang, navOpen, setNavOpen, muted, setMuted } = useApp();
   const ref = useRef<HTMLElement>(null);
 
@@ -114,27 +115,7 @@ export default function Header({ visible }: { visible: boolean }) {
           }}
         >
           <img src="/svgs/audio_bg.svg" alt="" aria-hidden style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }} />
-          <svg
-            width="55%" height="55%"
-            viewBox="0 0 20 16"
-            fill="none"
-            style={{ position: 'relative' }}
-          >
-            {muted ? (
-              <>
-                <line x1="2" y1="2" x2="18" y2="14" stroke="#68142b" strokeWidth="1.5" strokeLinecap="round"/>
-                <line x1="18" y1="2" x2="2" y2="14" stroke="#68142b" strokeWidth="1.5" strokeLinecap="round"/>
-              </>
-            ) : (
-              <>
-                <rect x="0" y="4" width="2" height="8" rx="1" fill="#68142b" opacity="0.4"/>
-                <rect x="4" y="2" width="2" height="12" rx="1" fill="#68142b" opacity="0.6"/>
-                <rect x="8" y="0" width="2" height="16" rx="1" fill="#68142b"/>
-                <rect x="12" y="3" width="2" height="10" rx="1" fill="#68142b" opacity="0.6"/>
-                <rect x="16" y="6" width="2" height="4" rx="1" fill="#68142b" opacity="0.4"/>
-              </>
-            )}
-          </svg>
+          <AudioWaveIcon active={audioPlaying} />
         </button>
       </div>
     </header>

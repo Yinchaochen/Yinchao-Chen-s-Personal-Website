@@ -110,6 +110,35 @@ h1, h2, h3, h4, h5, h6 {
 }
 .mm-shadow:hover { filter: drop-shadow(0 0 transparent); }
 
+.audio-wave-icon__baseline,
+.audio-wave-icon__motion {
+  transition: opacity .28s ease, transform .28s ease;
+}
+
+.audio-wave-icon__baseline {
+  opacity: 0.92;
+}
+
+.audio-wave-icon__motion {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.audio-wave-icon.is-active .audio-wave-icon__baseline {
+  opacity: 0.16;
+}
+
+.audio-wave-icon.is-active .audio-wave-icon__motion {
+  opacity: 1;
+  animation: audio-wave-glide 1.15s ease-in-out infinite alternate;
+}
+
+@keyframes audio-wave-glide {
+  from { transform: translateX(-1.35px); }
+  to { transform: translateX(1.35px); }
+}
+
 /* ─── Rotate warning (landscape on mobile) ──────────── */
 .rotate {
   display: none;

@@ -40,7 +40,7 @@ export default function SoundPrompt({ onEnable, onDismiss }: SoundPromptProps) {
           lineHeight: 1.5,
           color: 'rgba(44, 46, 44, 0.72)',
         }}>
-          Tap once to enable the music.
+          If your browser blocks autoplay, tap once to enable the music.
         </p>
       </div>
 
