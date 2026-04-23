@@ -24,6 +24,7 @@ export function useManagedAudioPlayback({
   const resumeRef = useRef<(() => void) | null>(null);
   const blockedRef = useRef(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false);
 
   const clearResumeListeners = useCallback(() => {
     resumeRef.current?.();
@@ -39,13 +40,14 @@ export function useManagedAudioPlayback({
     const wasBlocked = blockedRef.current;
 
     blockedRef.current = false;
+    setIsBlocked(false);
     clearResumeListeners();
-    syncPlaybackState();
+    setIsPlaying(true);
 
     if (wasBlocked) {
       onResumed?.();
     }
-  }, [clearResumeListeners, onResumed, syncPlaybackState]);
+  }, [clearResumeListeners, onResumed]);
 
   const queueResumeOnInteraction = useCallback(() => {
     if (resumeRef.current) return;
@@ -80,6 +82,7 @@ export function useManagedAudioPlayback({
     if (muted) {
       audio.pause();
       blockedRef.current = false;
+      setIsBlocked(false);
       clearResumeListeners();
       setIsPlaying(false);
       return;
@@ -96,6 +99,7 @@ export function useManagedAudioPlayback({
       })
       .catch(() => {
         setIsPlaying(false);
+        setIsBlocked(true);
         queueResumeOnInteraction();
 
         if (!blockedRef.current) {
@@ -116,6 +120,7 @@ export function useManagedAudioPlayback({
     if (muted) {
       audio.pause();
       blockedRef.current = false;
+      setIsBlocked(false);
       clearResumeListeners();
       setIsPlaying(false);
       return;
@@ -169,6 +174,7 @@ export function useManagedAudioPlayback({
 
   return {
     ensurePlayback,
+    isBlocked,
     isPlaying,
   };
 }

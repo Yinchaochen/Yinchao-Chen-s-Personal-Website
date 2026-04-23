@@ -22,13 +22,13 @@ export default function BlogAudio() {
     window.localStorage.setItem(STORAGE_KEY, String(muted));
   }, [muted]);
 
-  const { isPlaying } = useManagedAudioPlayback({
+  const { isBlocked, isPlaying } = useManagedAudioPlayback({
     audioRef,
     muted,
     volume: 0.4,
   });
   const showAudioHint = useAudioHintBubble({
-    enabled: !muted && !isPlaying,
+    enabled: !muted && isBlocked,
     hintKey: `blog:${location.pathname}`,
   });
 

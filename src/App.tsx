@@ -20,7 +20,7 @@ export default function App() {
   const [mouseMoved, setMouseMoved] = useState(false);
   const sceneSwitchAudioRef = useRef<HTMLAudioElement | null>(null);
   const sceneCloseAudioRef = useRef<HTMLAudioElement | null>(null);
-  const { isPlaying: ambientIsPlaying } = useManagedAudioPlayback({
+  const { isBlocked: ambientIsBlocked, isPlaying: ambientIsPlaying } = useManagedAudioPlayback({
     audioRef,
     muted,
     volume: 0.4,
@@ -30,7 +30,7 @@ export default function App() {
     [activeSceneId],
   );
   const showAudioHint = useAudioHintBubble({
-    enabled: loaded && mouseMoved && !muted && !ambientIsPlaying,
+    enabled: loaded && mouseMoved && !muted && ambientIsBlocked,
     hintKey: audioHintKey,
   });
 
