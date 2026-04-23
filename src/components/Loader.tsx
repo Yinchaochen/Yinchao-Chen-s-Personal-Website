@@ -1,9 +1,11 @@
 import { useRef, useEffect, useState } from 'react';
 import gsap from 'gsap';
 import { useApp } from '../context/AppContext';
+import { useSiteAudio } from '../context/SiteAudioContext';
 
 export default function Loader() {
-  const { setLoaded, audioRef, lang, setLang } = useApp();
+  const { setLoaded, lang, setLang } = useApp();
+  const { ensureAudioPlayback } = useSiteAudio();
   const bgRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const contentRef = useRef<HTMLParagraphElement>(null);
@@ -31,15 +33,7 @@ export default function Loader() {
     if (!ready) return;
 
     // Start audio (must be inside user gesture)
-    if (audioRef.current) {
-      const audio = audioRef.current;
-      audio.volume = 0.4;
-      audio.play().catch(() => {
-        // Retry once on next user interaction if autoplay was blocked
-        const retry = () => { audio.play().catch(() => {}); document.removeEventListener('click', retry); };
-        document.addEventListener('click', retry, { once: true });
-      });
-    }
+    ensureAudioPlayback();
 
     const tl = gsap.timeline({ onComplete: () => setLoaded(true) });
     tl.to([titleRef.current, contentRef.current, btnRef.current, audioHintRef.current], {

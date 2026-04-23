@@ -1,6 +1,7 @@
 import { useRef, useEffect } from 'react';
 import gsap from 'gsap';
 import { useApp } from '../context/AppContext';
+import { useSiteAudio } from '../context/SiteAudioContext';
 import AudioWaveIcon from './AudioWaveIcon';
 import AudioHintBubble from './AudioHintBubble';
 
@@ -15,7 +16,8 @@ export default function Header({
   showAudioHint: boolean;
   onAudioToggle: () => void;
 }) {
-  const { lang, setLang, navOpen, setNavOpen, muted } = useApp();
+  const { lang, setLang, navOpen, setNavOpen } = useApp();
+  const { muted } = useSiteAudio();
   const ref = useRef<HTMLElement>(null);
 
   useEffect(() => {

@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useRef, type ReactNode } from 'react';
+import { createContext, useContext, useState, type ReactNode } from 'react';
 
 export type Lang = 'zh' | 'en' | 'de';
 
@@ -60,9 +60,6 @@ interface AppContextType {
   setActiveSceneId: (id: string | null) => void;
   navOpen: boolean;
   setNavOpen: (v: boolean) => void;
-  audioRef: React.RefObject<HTMLAudioElement | null>;
-  muted: boolean;
-  setMuted: (v: boolean) => void;
 }
 
 const AppContext = createContext<AppContextType>({} as AppContextType);
@@ -73,8 +70,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [activeSection, setActiveSection] = useState<Section | null>(null);
   const [activeSceneId, setActiveSceneId] = useState<string | null>(null);
   const [navOpen, setNavOpen] = useState(false);
-  const [muted, setMuted] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const t = (obj: { zh: string; en: string; de: string }) => obj[lang];
 
@@ -85,7 +80,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       activeSection, setActiveSection,
       activeSceneId, setActiveSceneId,
       navOpen, setNavOpen,
-      audioRef, muted, setMuted,
     }}>
       {children}
     </AppContext.Provider>

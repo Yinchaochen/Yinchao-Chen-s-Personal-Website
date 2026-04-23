@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import './styles/global.css';
 import { AppProvider } from './context/AppContext';
+import { SiteAudioProvider } from './context/SiteAudioContext';
 import BlogLayout from './components/BlogLayout';
 
 const App = lazy(() => import('./App'));
@@ -32,17 +33,19 @@ function RouteFallback() {
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
-      <Suspense fallback={<RouteFallback />}>
-        <Routes>
-          <Route path="/" element={<AppProvider><App /></AppProvider>} />
-          <Route element={<BlogLayout />}>
-            <Route path="/blog" element={<BlogList />} />
-            <Route path="/blog/:slug" element={<BlogPost />} />
-            <Route path="/write" element={<Write />} />
-            <Route path="/write/:id" element={<Write />} />
-          </Route>
-        </Routes>
-      </Suspense>
+      <SiteAudioProvider>
+        <Suspense fallback={<RouteFallback />}>
+          <Routes>
+            <Route path="/" element={<AppProvider><App /></AppProvider>} />
+            <Route element={<BlogLayout />}>
+              <Route path="/blog" element={<BlogList />} />
+              <Route path="/blog/:slug" element={<BlogPost />} />
+              <Route path="/write" element={<Write />} />
+              <Route path="/write/:id" element={<Write />} />
+            </Route>
+          </Routes>
+        </Suspense>
+      </SiteAudioProvider>
     </BrowserRouter>
   </StrictMode>,
 );

@@ -9,32 +9,30 @@ import Accordion from './components/Accordion';
 import BackButton from './components/BackButton';
 import RotateWarning from './components/RotateWarning';
 import LatestBlogNotice from './components/LatestBlogNotice';
-import { useManagedAudioPlayback } from './hooks/useManagedAudioPlayback';
 import { useAudioHintBubble } from './hooks/useAudioHintBubble';
+import { useSiteAudio } from './context/SiteAudioContext';
 
 const SceneCanvas = lazy(() => import('./components/Canvas'));
 
 export default function App() {
-  const { loaded, setActiveSection, activeSceneId, setActiveSceneId, audioRef, muted, setMuted } = useApp();
+  const { loaded, setActiveSection, activeSceneId, setActiveSceneId } = useApp();
+  const {
+    muted,
+    setMuted,
+    audioPlaying,
+    audioBlocked,
+    stopAudioPlayback,
+  } = useSiteAudio();
   const [hoveredId, setHoveredId]   = useState<string | null>(null);
   const [mouseMoved, setMouseMoved] = useState(false);
   const sceneSwitchAudioRef = useRef<HTMLAudioElement | null>(null);
   const sceneCloseAudioRef = useRef<HTMLAudioElement | null>(null);
-  const {
-    isBlocked: ambientIsBlocked,
-    isPlaying: ambientIsPlaying,
-    stopPlayback: stopAmbientPlayback,
-  } = useManagedAudioPlayback({
-    audioRef,
-    muted,
-    volume: 0.4,
-  });
   const audioHintKey = useMemo(
     () => `home:${activeSceneId ?? 'landing'}`,
     [activeSceneId],
   );
   const showAudioHint = useAudioHintBubble({
-    enabled: loaded && mouseMoved && !muted && ambientIsBlocked,
+    enabled: loaded && mouseMoved && !muted && audioBlocked,
     hintKey: audioHintKey,
   });
 
@@ -76,15 +74,14 @@ export default function App() {
 
   const handleAudioToggle = useCallback(() => {
     if (!muted) {
-      stopAmbientPlayback();
+      stopAudioPlayback();
     }
 
     setMuted(!muted);
-  }, [muted, setMuted, stopAmbientPlayback]);
+  }, [muted, setMuted, stopAudioPlayback]);
 
   return (
     <div style={{ width: '100vw', height: '100svh', overflow: 'hidden', background: 'var(--color-loader)' }}>
-      <audio ref={audioRef} src="/audio/ambient.mp3" loop preload="auto" playsInline autoPlay />
       <audio ref={sceneSwitchAudioRef} src="/audio/click-se.mp3" preload="auto" playsInline />
       <audio ref={sceneCloseAudioRef} src="/audio/close-se.mp3" preload="auto" playsInline />
 
@@ -103,7 +100,7 @@ export default function App() {
 
       <Header
         visible={loaded && mouseMoved}
-        audioPlaying={!muted && ambientIsPlaying}
+        audioPlaying={!muted && audioPlaying}
         showAudioHint={showAudioHint}
         onAudioToggle={handleAudioToggle}
       />
