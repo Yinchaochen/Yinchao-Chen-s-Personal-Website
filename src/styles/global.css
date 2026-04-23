@@ -110,33 +110,68 @@ h1, h2, h3, h4, h5, h6 {
 }
 .mm-shadow:hover { filter: drop-shadow(0 0 transparent); }
 
-.audio-wave-icon__baseline,
-.audio-wave-icon__motion {
-  transition: opacity .28s ease, transform .28s ease;
-}
-
-.audio-wave-icon__baseline {
-  opacity: 0.92;
-}
-
-.audio-wave-icon__motion {
+.audio-hint-bubble {
+  min-width: 176px;
+  max-width: 220px;
+  padding: 8px 12px;
+  border: 1px solid rgba(104, 20, 43, 0.12);
+  background: rgba(250, 249, 247, 0.68);
+  color: rgba(104, 20, 43, 0.84);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 12px 30px rgba(44, 46, 44, 0.08);
   opacity: 0;
-  transform-box: fill-box;
-  transform-origin: center;
+  pointer-events: none;
+  transition: opacity .28s ease, transform .32s ease;
 }
 
-.audio-wave-icon.is-active .audio-wave-icon__baseline {
-  opacity: 0.16;
+.audio-hint-bubble--centered {
+  transform: translateY(-50%) translateX(6px);
 }
 
-.audio-wave-icon.is-active .audio-wave-icon__motion {
+.audio-hint-bubble--bottom {
+  transform: translateX(6px);
+}
+
+.audio-hint-bubble.is-visible {
   opacity: 1;
-  animation: audio-wave-glide 1.15s ease-in-out infinite alternate;
 }
 
-@keyframes audio-wave-glide {
-  from { transform: translateX(-1.35px); }
-  to { transform: translateX(1.35px); }
+.audio-hint-bubble__text {
+  display: block;
+  font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 11px;
+  line-height: 1.45;
+  letter-spacing: 0.02em;
+}
+
+@keyframes audio-hint-float-centered {
+  0% { transform: translateY(-50%) translateX(6px); }
+  50% { transform: translateY(calc(-50% - 3px)) translateX(0); }
+  100% { transform: translateY(-50%) translateX(6px); }
+}
+
+@keyframes audio-hint-float-bottom {
+  0% { transform: translateX(6px) translateY(0); }
+  50% { transform: translateX(0) translateY(-3px); }
+  100% { transform: translateX(6px) translateY(0); }
+}
+
+.audio-hint-bubble--centered.is-visible {
+  animation: audio-hint-float-centered 2.1s ease-in-out infinite;
+}
+
+.audio-hint-bubble--bottom.is-visible {
+  animation: audio-hint-float-bottom 2.1s ease-in-out infinite;
+}
+
+.audio-wave-icon__wave {
+  opacity: 0.9;
+  transition: opacity .22s ease, filter .22s ease;
+}
+
+.audio-wave-icon.is-active .audio-wave-icon__wave {
+  opacity: 1;
+  filter: drop-shadow(0 0 1.6px rgba(104, 20, 43, 0.18));
 }
 
 /* ─── Rotate warning (landscape on mobile) ──────────── */

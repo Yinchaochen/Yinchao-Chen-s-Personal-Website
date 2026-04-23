@@ -2,8 +2,17 @@ import { useRef, useEffect } from 'react';
 import gsap from 'gsap';
 import { useApp } from '../context/AppContext';
 import AudioWaveIcon from './AudioWaveIcon';
+import AudioHintBubble from './AudioHintBubble';
 
-export default function Header({ visible, audioPlaying }: { visible: boolean; audioPlaying: boolean }) {
+export default function Header({
+  visible,
+  audioPlaying,
+  showAudioHint,
+}: {
+  visible: boolean;
+  audioPlaying: boolean;
+  showAudioHint: boolean;
+}) {
   const { lang, setLang, navOpen, setNavOpen, muted, setMuted } = useApp();
   const ref = useRef<HTMLElement>(null);
 
@@ -99,24 +108,37 @@ export default function Header({ visible, audioPlaying }: { visible: boolean; au
         ))}
 
         {/* Audio toggle */}
-        <button
-          onClick={toggleMute}
-          className="mm-shadow"
-          title={muted ? 'Unmute' : 'Mute'}
+        <div
           style={{
             position: 'relative',
             width: 'calc(var(--grid-val) * 1.1vw)',
             height: 'calc(var(--grid-val) * 1.1vw)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
             marginLeft: 'calc(var(--grid-val) * .25vw)',
           }}
         >
-          <img src="/svgs/audio_bg.svg" alt="" aria-hidden style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }} />
-          <AudioWaveIcon active={audioPlaying} />
-        </button>
+          <AudioHintBubble
+            visible={showAudioHint}
+            text="Click the sound icon to play music."
+            top="50%"
+          />
+          <button
+            onClick={toggleMute}
+            className="mm-shadow"
+            title={muted ? 'Unmute' : 'Mute'}
+            style={{
+              position: 'relative',
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+            }}
+          >
+            <img src="/svgs/audio_bg.svg" alt="" aria-hidden style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }} />
+            <AudioWaveIcon active={audioPlaying} />
+          </button>
+        </div>
       </div>
     </header>
   );

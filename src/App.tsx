@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect, Suspense, lazy } from 'react';
+import { useState, useRef, useCallback, useEffect, Suspense, lazy, useMemo } from 'react';
 import { useApp, type Section } from './context/AppContext';
 import Loader from './components/Loader';
 import Header from './components/Header';
@@ -9,8 +9,8 @@ import Accordion from './components/Accordion';
 import BackButton from './components/BackButton';
 import RotateWarning from './components/RotateWarning';
 import LatestBlogNotice from './components/LatestBlogNotice';
-import { initializeAudioEntrySession } from './lib/audioPrompt';
 import { useManagedAudioPlayback } from './hooks/useManagedAudioPlayback';
+import { useAudioHintBubble } from './hooks/useAudioHintBubble';
 
 const SceneCanvas = lazy(() => import('./components/Canvas'));
 
@@ -25,15 +25,19 @@ export default function App() {
     muted,
     volume: 0.4,
   });
+  const audioHintKey = useMemo(
+    () => `home:${activeSceneId ?? 'landing'}`,
+    [activeSceneId],
+  );
+  const showAudioHint = useAudioHintBubble({
+    enabled: loaded && mouseMoved && !muted && !ambientIsPlaying,
+    hintKey: audioHintKey,
+  });
 
   useEffect(() => {
     const h = () => { setMouseMoved(true); window.removeEventListener('mousemove', h); };
     window.addEventListener('mousemove', h);
     return () => window.removeEventListener('mousemove', h);
-  }, []);
-
-  useEffect(() => {
-    initializeAudioEntrySession();
   }, []);
 
   const playSound = useCallback((audio: HTMLAudioElement | null, volume: number) => {
@@ -85,7 +89,11 @@ export default function App() {
 
       {loaded && !activeSceneId && <PinLabel hoveredId={hoveredId} />}
 
-      <Header visible={loaded && mouseMoved} audioPlaying={!muted && ambientIsPlaying} />
+      <Header
+        visible={loaded && mouseMoved}
+        audioPlaying={!muted && ambientIsPlaying}
+        showAudioHint={showAudioHint}
+      />
 
       <Navigator onOpen={handleOpen} />
 

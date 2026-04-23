@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { acknowledgeEntryAudioPrompt, shouldShowEntryAudioPrompt } from '../lib/audioPrompt';
+import { useLocation } from 'react-router-dom';
 import { useManagedAudioPlayback } from '../hooks/useManagedAudioPlayback';
+import { useAudioHintBubble } from '../hooks/useAudioHintBubble';
 import AudioWaveIcon from './AudioWaveIcon';
-import SoundPrompt from './SoundPrompt';
+import AudioHintBubble from './AudioHintBubble';
 
 const STORAGE_KEY = 'blog-audio-muted';
 
@@ -12,62 +13,33 @@ function getStoredMutedState() {
 }
 
 export default function BlogAudio() {
+  const location = useLocation();
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const canShowEntryPromptRef = useRef(shouldShowEntryAudioPrompt());
   const [muted, setMuted] = useState(getStoredMutedState);
-  const [showPrompt, setShowPrompt] = useState(false);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
     window.localStorage.setItem(STORAGE_KEY, String(muted));
   }, [muted]);
-  const { ensurePlayback, isPlaying } = useManagedAudioPlayback({
+
+  const { isPlaying } = useManagedAudioPlayback({
     audioRef,
     muted,
     volume: 0.4,
-    onBlocked: () => {
-      if (canShowEntryPromptRef.current) {
-        setShowPrompt(true);
-      }
-    },
-    onResumed: () => {
-      setShowPrompt(false);
-    },
+  });
+  const showAudioHint = useAudioHintBubble({
+    enabled: !muted && !isPlaying,
+    hintKey: `blog:${location.pathname}`,
   });
 
-  const handleEnablePrompt = useCallback(() => {
-    acknowledgeEntryAudioPrompt();
-    canShowEntryPromptRef.current = false;
-    setShowPrompt(false);
-    ensurePlayback();
-  }, [ensurePlayback]);
-
-  const handleDismissPrompt = useCallback(() => {
-    acknowledgeEntryAudioPrompt();
-    canShowEntryPromptRef.current = false;
-    setShowPrompt(false);
-  }, []);
-
   const toggleMuted = useCallback(() => {
-    setMuted((value) => {
-      const next = !value;
-      if (!next) {
-        acknowledgeEntryAudioPrompt();
-        canShowEntryPromptRef.current = false;
-      }
-      return next;
-    });
+    setMuted((value) => !value);
   }, []);
 
   return (
     <>
       <audio ref={audioRef} src="/audio/blog-theme.mp3" loop preload="auto" playsInline autoPlay />
-      {showPrompt && !muted && (
-        <SoundPrompt onEnable={handleEnablePrompt} onDismiss={handleDismissPrompt} />
-      )}
-      <button
-        onClick={toggleMuted}
-        title={muted ? 'Enable blog music' : 'Mute blog music'}
+      <div
         style={{
           position: 'fixed',
           right: '24px',
@@ -75,24 +47,39 @@ export default function BlogAudio() {
           zIndex: 40,
           width: '44px',
           height: '44px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          cursor: 'pointer',
-          background: 'none',
-          border: 'none',
-          padding: 0,
         }}
-        className="mm-shadow"
+      >
+        <AudioHintBubble
+          visible={showAudioHint}
+          text="Click the sound icon to play music."
+          bottom="2px"
+        />
+        <button
+          onClick={toggleMuted}
+          title={muted ? 'Enable blog music' : 'Mute blog music'}
+          style={{
+            position: 'relative',
+            width: '100%',
+            height: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            background: 'none',
+            border: 'none',
+            padding: 0,
+          }}
+          className="mm-shadow"
         >
-          <img
-            src="/svgs/audio_bg.svg"
-            alt=""
-            aria-hidden
-            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}
-          />
-        <AudioWaveIcon active={!muted && isPlaying} />
-      </button>
+            <img
+              src="/svgs/audio_bg.svg"
+              alt=""
+              aria-hidden
+              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}
+            />
+          <AudioWaveIcon active={!muted && isPlaying} />
+        </button>
+      </div>
     </>
   );
 }
