@@ -3,7 +3,7 @@ import gsap from 'gsap';
 import { useApp } from '../context/AppContext';
 
 export default function Header({ visible }: { visible: boolean }) {
-  const { lang, setLang, navOpen, setNavOpen, muted, setMuted, audioRef } = useApp();
+  const { lang, setLang, navOpen, setNavOpen, muted, setMuted } = useApp();
   const ref = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -13,10 +13,7 @@ export default function Header({ visible }: { visible: boolean }) {
   }, [visible]);
 
   const toggleMute = () => {
-    if (!audioRef.current) return;
-    const next = !muted;
-    setMuted(next);
-    audioRef.current.volume = next ? 0 : 0.4;
+    setMuted(!muted);
   };
 
   return (

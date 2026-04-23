@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { acknowledgeEntryAudioPrompt, shouldShowEntryAudioPrompt } from '../lib/audioPrompt';
+import SoundPrompt from './SoundPrompt';
 
 const STORAGE_KEY = 'blog-audio-muted';
 
@@ -10,7 +12,9 @@ function getStoredMutedState() {
 export default function BlogAudio() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const resumeRef = useRef<(() => void) | null>(null);
+  const canShowEntryPromptRef = useRef(shouldShowEntryAudioPrompt());
   const [muted, setMuted] = useState(getStoredMutedState);
+  const [showPrompt, setShowPrompt] = useState(false);
 
   const clearResumeListeners = useCallback(() => {
     resumeRef.current?.();
@@ -45,6 +49,19 @@ export default function BlogAudio() {
     const audio = audioRef.current;
     if (!audio) return;
 
+    const ensurePlayback = () => {
+      audio.play()
+        .then(() => {
+          setShowPrompt(false);
+        })
+        .catch(() => {
+          queueResumeOnInteraction();
+          if (canShowEntryPromptRef.current) {
+            setShowPrompt(true);
+          }
+        });
+    };
+
     audio.volume = 0.4;
     audio.muted = muted;
 
@@ -54,16 +71,45 @@ export default function BlogAudio() {
       return;
     }
 
-    audio.play().catch(() => {
-      queueResumeOnInteraction();
-    });
+    ensurePlayback();
 
-    return clearResumeListeners;
+    const handleVisibilityChange = () => {
+      if (!document.hidden && audio.paused) {
+        ensurePlayback();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      clearResumeListeners();
+    };
   }, [clearResumeListeners, muted, queueResumeOnInteraction]);
+
+  const handleEnablePrompt = useCallback(() => {
+    acknowledgeEntryAudioPrompt();
+    canShowEntryPromptRef.current = false;
+    setShowPrompt(false);
+
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    audio.play().catch(() => {});
+  }, []);
+
+  const handleDismissPrompt = useCallback(() => {
+    acknowledgeEntryAudioPrompt();
+    canShowEntryPromptRef.current = false;
+    setShowPrompt(false);
+  }, []);
 
   return (
     <>
-      <audio ref={audioRef} src="/audio/blog-theme.mp3" loop preload="metadata" />
+      <audio ref={audioRef} src="/audio/blog-theme.mp3" loop preload="metadata" playsInline />
+      {showPrompt && !muted && (
+        <SoundPrompt onEnable={handleEnablePrompt} onDismiss={handleDismissPrompt} />
+      )}
       <button
         onClick={() => setMuted((value) => !value)}
         title={muted ? 'Enable blog music' : 'Mute blog music'}

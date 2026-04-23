@@ -15,6 +15,7 @@ export default function App() {
   const { loaded, setActiveSection, activeSceneId, setActiveSceneId, audioRef, muted } = useApp();
   const [hoveredId, setHoveredId]   = useState<string | null>(null);
   const [mouseMoved, setMouseMoved] = useState(false);
+  const ambientResumeRef = useRef<(() => void) | null>(null);
   const sceneSwitchAudioRef = useRef<HTMLAudioElement | null>(null);
   const sceneCloseAudioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -23,6 +24,66 @@ export default function App() {
     window.addEventListener('mousemove', h);
     return () => window.removeEventListener('mousemove', h);
   }, []);
+
+  const clearAmbientResumeListeners = useCallback(() => {
+    ambientResumeRef.current?.();
+    ambientResumeRef.current = null;
+  }, []);
+
+  const queueAmbientResumeOnInteraction = useCallback(() => {
+    if (ambientResumeRef.current) return;
+
+    const resume = () => {
+      const audio = audioRef.current;
+      if (!audio || muted) return;
+
+      audio.play().catch(() => {});
+      clearAmbientResumeListeners();
+    };
+
+    document.addEventListener('pointerdown', resume, { once: true });
+    document.addEventListener('keydown', resume, { once: true });
+
+    ambientResumeRef.current = () => {
+      document.removeEventListener('pointerdown', resume);
+      document.removeEventListener('keydown', resume);
+    };
+  }, [audioRef, clearAmbientResumeListeners, muted]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const ensurePlayback = () => {
+      audio.play().catch(() => {
+        queueAmbientResumeOnInteraction();
+      });
+    };
+
+    audio.volume = 0.4;
+    audio.muted = muted;
+
+    if (muted) {
+      audio.pause();
+      clearAmbientResumeListeners();
+      return;
+    }
+
+    ensurePlayback();
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden && audio.paused) {
+        ensurePlayback();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      clearAmbientResumeListeners();
+    };
+  }, [audioRef, clearAmbientResumeListeners, muted, queueAmbientResumeOnInteraction]);
 
   const playSound = useCallback((audio: HTMLAudioElement | null, volume: number) => {
     if (muted) return;
@@ -56,9 +117,9 @@ export default function App() {
 
   return (
     <div style={{ width: '100vw', height: '100svh', overflow: 'hidden', background: 'var(--color-loader)' }}>
-      <audio ref={audioRef} src="/audio/ambient.mp3" loop preload="metadata" />
-      <audio ref={sceneSwitchAudioRef} src="/audio/click-se.mp3" preload="auto" />
-      <audio ref={sceneCloseAudioRef} src="/audio/close-se.mp3" preload="auto" />
+      <audio ref={audioRef} src="/audio/ambient.mp3" loop preload="metadata" playsInline />
+      <audio ref={sceneSwitchAudioRef} src="/audio/click-se.mp3" preload="auto" playsInline />
+      <audio ref={sceneCloseAudioRef} src="/audio/close-se.mp3" preload="auto" playsInline />
 
       <Suspense fallback={null}>
         <SceneCanvas activeSceneId={activeSceneId} />
