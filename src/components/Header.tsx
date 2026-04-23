@@ -8,12 +8,14 @@ export default function Header({
   visible,
   audioPlaying,
   showAudioHint,
+  onAudioToggle,
 }: {
   visible: boolean;
   audioPlaying: boolean;
   showAudioHint: boolean;
+  onAudioToggle: () => void;
 }) {
-  const { lang, setLang, navOpen, setNavOpen, muted, setMuted } = useApp();
+  const { lang, setLang, navOpen, setNavOpen, muted } = useApp();
   const ref = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -21,10 +23,6 @@ export default function Header({
       gsap.to(ref.current, { opacity: 1, duration: 1, delay: 0.3 });
     }
   }, [visible]);
-
-  const toggleMute = () => {
-    setMuted(!muted);
-  };
 
   return (
     <header
@@ -122,7 +120,7 @@ export default function Header({
             top="50%"
           />
           <button
-            onClick={toggleMute}
+            onClick={onAudioToggle}
             className="mm-shadow"
             title={muted ? 'Unmute' : 'Mute'}
             style={{

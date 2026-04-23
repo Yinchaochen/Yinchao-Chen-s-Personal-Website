@@ -22,7 +22,7 @@ export default function BlogAudio() {
     window.localStorage.setItem(STORAGE_KEY, String(muted));
   }, [muted]);
 
-  const { isBlocked, isPlaying } = useManagedAudioPlayback({
+  const { isBlocked, isPlaying, stopPlayback } = useManagedAudioPlayback({
     audioRef,
     muted,
     volume: 0.4,
@@ -33,8 +33,14 @@ export default function BlogAudio() {
   });
 
   const toggleMuted = useCallback(() => {
-    setMuted((value) => !value);
-  }, []);
+    setMuted((value) => {
+      if (!value) {
+        stopPlayback();
+      }
+
+      return !value;
+    });
+  }, [stopPlayback]);
 
   return (
     <>

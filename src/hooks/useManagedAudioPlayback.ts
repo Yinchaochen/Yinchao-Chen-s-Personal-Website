@@ -23,8 +23,14 @@ export function useManagedAudioPlayback({
 }: UseManagedAudioPlaybackOptions) {
   const resumeRef = useRef<(() => void) | null>(null);
   const blockedRef = useRef(false);
+  const playAttemptRef = useRef(0);
+  const mutedRef = useRef(muted);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
+
+  useEffect(() => {
+    mutedRef.current = muted;
+  }, [muted]);
 
   const clearResumeListeners = useCallback(() => {
     resumeRef.current?.();
@@ -35,6 +41,21 @@ export function useManagedAudioPlayback({
     const audio = audioRef.current;
     setIsPlaying(Boolean(audio && isAudioEffectivelyPlaying(audio)));
   }, [audioRef]);
+
+  const stopPlayback = useCallback(() => {
+    const audio = audioRef.current;
+
+    playAttemptRef.current += 1;
+    blockedRef.current = false;
+    setIsBlocked(false);
+    clearResumeListeners();
+    setIsPlaying(false);
+
+    if (!audio) return;
+
+    audio.pause();
+    audio.muted = true;
+  }, [audioRef, clearResumeListeners]);
 
   const handlePlaybackSuccess = useCallback(() => {
     const wasBlocked = blockedRef.current;
@@ -54,10 +75,16 @@ export function useManagedAudioPlayback({
 
     const resume = () => {
       const audio = audioRef.current;
-      if (!audio || muted) return;
+      if (!audio || mutedRef.current) return;
+
+      const attemptId = ++playAttemptRef.current;
 
       audio.play()
         .then(() => {
+          if (attemptId !== playAttemptRef.current || mutedRef.current) {
+            audio.pause();
+            return;
+          }
           handlePlaybackSuccess();
         })
         .catch(() => {});
@@ -70,7 +97,7 @@ export function useManagedAudioPlayback({
       document.removeEventListener('pointerdown', resume);
       document.removeEventListener('keydown', resume);
     };
-  }, [audioRef, handlePlaybackSuccess, muted]);
+  }, [audioRef, handlePlaybackSuccess]);
 
   const ensurePlayback = useCallback(() => {
     const audio = audioRef.current;
@@ -80,11 +107,7 @@ export function useManagedAudioPlayback({
     audio.muted = muted;
 
     if (muted) {
-      audio.pause();
-      blockedRef.current = false;
-      setIsBlocked(false);
-      clearResumeListeners();
-      setIsPlaying(false);
+      stopPlayback();
       return;
     }
 
@@ -93,11 +116,20 @@ export function useManagedAudioPlayback({
       return;
     }
 
+    const attemptId = ++playAttemptRef.current;
+
     audio.play()
       .then(() => {
+        if (attemptId !== playAttemptRef.current || mutedRef.current) {
+          audio.pause();
+          return;
+        }
         handlePlaybackSuccess();
       })
       .catch(() => {
+        if (attemptId !== playAttemptRef.current || mutedRef.current) {
+          return;
+        }
         setIsPlaying(false);
         setIsBlocked(true);
         queueResumeOnInteraction();
@@ -108,7 +140,7 @@ export function useManagedAudioPlayback({
 
         blockedRef.current = true;
       });
-  }, [audioRef, clearResumeListeners, handlePlaybackSuccess, muted, onBlocked, queueResumeOnInteraction, volume]);
+  }, [audioRef, handlePlaybackSuccess, muted, onBlocked, queueResumeOnInteraction, stopPlayback, volume]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -118,11 +150,7 @@ export function useManagedAudioPlayback({
     audio.muted = muted;
 
     if (muted) {
-      audio.pause();
-      blockedRef.current = false;
-      setIsBlocked(false);
-      clearResumeListeners();
-      setIsPlaying(false);
+      stopPlayback();
       return;
     }
 
@@ -168,13 +196,15 @@ export function useManagedAudioPlayback({
       audio.removeEventListener('ended', sync);
       clearResumeListeners();
     };
-  }, [audioRef, checkerIntervalMs, clearResumeListeners, ensurePlayback, muted, syncPlaybackState, volume]);
+  }, [audioRef, checkerIntervalMs, clearResumeListeners, ensurePlayback, muted, stopPlayback, syncPlaybackState, volume]);
 
   useEffect(() => {
+    const audio = audioRef.current;
+
     return () => {
-      const audio = audioRef.current;
       if (!audio) return;
 
+      playAttemptRef.current += 1;
       audio.pause();
       audio.currentTime = 0;
     };
@@ -184,5 +214,6 @@ export function useManagedAudioPlayback({
     ensurePlayback,
     isBlocked,
     isPlaying,
+    stopPlayback,
   };
 }

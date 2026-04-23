@@ -15,12 +15,16 @@ import { useAudioHintBubble } from './hooks/useAudioHintBubble';
 const SceneCanvas = lazy(() => import('./components/Canvas'));
 
 export default function App() {
-  const { loaded, setActiveSection, activeSceneId, setActiveSceneId, audioRef, muted } = useApp();
+  const { loaded, setActiveSection, activeSceneId, setActiveSceneId, audioRef, muted, setMuted } = useApp();
   const [hoveredId, setHoveredId]   = useState<string | null>(null);
   const [mouseMoved, setMouseMoved] = useState(false);
   const sceneSwitchAudioRef = useRef<HTMLAudioElement | null>(null);
   const sceneCloseAudioRef = useRef<HTMLAudioElement | null>(null);
-  const { isBlocked: ambientIsBlocked, isPlaying: ambientIsPlaying } = useManagedAudioPlayback({
+  const {
+    isBlocked: ambientIsBlocked,
+    isPlaying: ambientIsPlaying,
+    stopPlayback: stopAmbientPlayback,
+  } = useManagedAudioPlayback({
     audioRef,
     muted,
     volume: 0.4,
@@ -70,6 +74,14 @@ export default function App() {
     setActiveSceneId(null);
   }, [playSceneCloseSound, setActiveSection, setActiveSceneId]);
 
+  const handleAudioToggle = useCallback(() => {
+    if (!muted) {
+      stopAmbientPlayback();
+    }
+
+    setMuted(!muted);
+  }, [muted, setMuted, stopAmbientPlayback]);
+
   return (
     <div style={{ width: '100vw', height: '100svh', overflow: 'hidden', background: 'var(--color-loader)' }}>
       <audio ref={audioRef} src="/audio/ambient.mp3" loop preload="auto" playsInline autoPlay />
@@ -93,6 +105,7 @@ export default function App() {
         visible={loaded && mouseMoved}
         audioPlaying={!muted && ambientIsPlaying}
         showAudioHint={showAudioHint}
+        onAudioToggle={handleAudioToggle}
       />
 
       <Navigator onOpen={handleOpen} />
