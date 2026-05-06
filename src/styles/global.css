@@ -393,3 +393,40 @@ h1, h2, h3, h4, h5, h6 {
   transform: translateY(-2px);
   box-shadow: 0 10px 24px rgba(44, 46, 44, 0.32);
 }
+
+.scrapbook-up-arrow {
+  position: fixed;
+  top: 50%;
+  left: 24px;
+  z-index: 30;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: rgba(50, 96, 85, 0.85);
+  color: #f6efde;
+  border: none;
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+  box-shadow: 0 6px 18px rgba(44, 46, 44, 0.22);
+  animation: scrapbook-up-float 2s ease-in-out infinite;
+  transition: background .25s ease, box-shadow .25s ease;
+}
+
+.scrapbook-up-arrow:hover {
+  background: #326055;
+  box-shadow: 0 10px 24px rgba(44, 46, 44, 0.32);
+}
+
+@keyframes scrapbook-up-float {
+  0%, 100% { transform: translateY(-50%); }
+  50%      { transform: translateY(calc(-50% - 8px)); }
+}
+
+@media (max-width: 640px) {
+  .scrapbook-up-arrow { left: 14px; width: 34px; height: 34px; font-size: 18px; }
+}

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import type { Session } from '@supabase/supabase-js';
 import { supabase, type ScrapbookEntry as Entry, type ScrapbookImage } from '../lib/supabase';
@@ -14,11 +14,15 @@ export default function Photography() {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
+  const [initialScrolled, setInitialScrolled] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
   const [composing, setComposing] = useState(false);
   const [editingEntry, setEditingEntry] = useState<Entry | null>(null);
-  const sentinelRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const topSentinelRef = useRef<HTMLDivElement>(null);
   const loadingRef = useRef(false);
+  const loadedCountRef = useRef(0);
+  const preserveScrollRef = useRef<{ height: number; top: number } | null>(null);
 
   /* auth */
   useEffect(() => {
@@ -27,15 +31,17 @@ export default function Photography() {
     return () => subscription.unsubscribe();
   }, []);
 
-  /* fetch */
-  const fetchPage = useCallback(async (offset: number) => {
+  /* Fetch newest-first from DB, but display ascending. Each call loads
+     one page of older entries and prepends to the array. */
+  const fetchOlder = useCallback(async () => {
     if (loadingRef.current) return;
     loadingRef.current = true;
+    const offset = loadedCountRef.current;
     const { data, error } = await supabase
       .from('scrapbook_entries')
       .select('*')
       .is('deleted_at', null)
-      .order('created_at', { ascending: true })
+      .order('created_at', { ascending: false })
       .range(offset, offset + PAGE_SIZE - 1);
     loadingRef.current = false;
     if (error) {
@@ -43,29 +49,62 @@ export default function Photography() {
       setLoading(false);
       return;
     }
-    const rows = (data ?? []) as Entry[];
-    setEntries(prev => offset === 0 ? rows : [...prev, ...rows]);
+    const rows = ((data ?? []) as Entry[]).slice().reverse();
+    const isInitial = offset === 0;
+    if (!isInitial && containerRef.current) {
+      // Capture scroll metrics so layout effect can restore the view
+      preserveScrollRef.current = {
+        height: containerRef.current.scrollHeight,
+        top: containerRef.current.scrollTop,
+      };
+    }
+    setEntries(prev => isInitial ? rows : [...rows, ...prev]);
+    loadedCountRef.current += rows.length;
     setHasMore(rows.length === PAGE_SIZE);
     setLoading(false);
   }, []);
 
-  useEffect(() => { fetchPage(0); }, [fetchPage]);
+  useEffect(() => { fetchOlder(); }, [fetchOlder]);
 
-  /* infinite scroll */
+  /* On initial load, jump to bottom (latest entry). On subsequent
+     prepends, restore scroll so the user's view doesn't jump. */
+  useLayoutEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    if (!initialScrolled && entries.length > 0) {
+      container.scrollTop = container.scrollHeight;
+      setInitialScrolled(true);
+      return;
+    }
+    if (preserveScrollRef.current) {
+      const { height, top } = preserveScrollRef.current;
+      container.scrollTop = top + (container.scrollHeight - height);
+      preserveScrollRef.current = null;
+    }
+  }, [entries, initialScrolled]);
+
+  /* Top sentinel — load older when scrolled near the top */
   useEffect(() => {
-    if (!sentinelRef.current || !hasMore) return;
-    const node = sentinelRef.current;
+    if (!topSentinelRef.current || !hasMore || !initialScrolled) return;
+    const node = topSentinelRef.current;
     const observer = new IntersectionObserver(([e]) => {
-      if (e.isIntersecting && !loadingRef.current) fetchPage(entries.length);
-    }, { rootMargin: '400px' });
+      if (e.isIntersecting && !loadingRef.current) fetchOlder();
+    }, { rootMargin: '300px' });
     observer.observe(node);
     return () => observer.disconnect();
-  }, [entries.length, hasMore, fetchPage]);
+  }, [hasMore, initialScrolled, entries.length, fetchOlder]);
 
   const handleSaved = (saved: Entry, isNew: boolean) => {
     setEntries(prev => isNew ? [...prev, saved] : prev.map(e => e.id === saved.id ? saved : e));
     setComposing(false);
     setEditingEntry(null);
+    if (isNew) {
+      requestAnimationFrame(() => {
+        if (containerRef.current) {
+          containerRef.current.scrollTo({ top: containerRef.current.scrollHeight, behavior: 'smooth' });
+        }
+      });
+    }
   };
 
   const handleDelete = async (entry: Entry) => {
@@ -78,8 +117,15 @@ export default function Photography() {
     setEntries(prev => prev.filter(e => e.id !== entry.id));
   };
 
+  const scrollUpOnePage = () => {
+    const container = containerRef.current;
+    if (!container) return;
+    container.scrollBy({ top: -window.innerHeight * 0.7, behavior: 'smooth' });
+  };
+
   return (
     <div
+      ref={containerRef}
       className="scrapbook-paper"
       style={{ position: 'fixed', inset: 0, overflowY: 'auto' }}
     >
@@ -107,6 +153,9 @@ export default function Photography() {
 
       {/* entries */}
       <main style={{ position: 'relative', paddingBottom: '120px', minHeight: 'calc(100vh - 80px)' }}>
+        {/* top sentinel — first so it observes the scroll-up edge */}
+        {hasMore && <div ref={topSentinelRef} style={{ height: '1px' }} />}
+
         {loading && entries.length === 0 && (
           <p style={{
             textAlign: 'center', marginTop: '120px',
@@ -134,9 +183,19 @@ export default function Photography() {
             onDelete={handleDelete}
           />
         ))}
-
-        {hasMore && <div ref={sentinelRef} style={{ height: '1px' }} />}
       </main>
+
+      {/* Up-arrow indicator — there's older history above */}
+      {hasMore && initialScrolled && entries.length > 0 && (
+        <button
+          className="scrapbook-up-arrow"
+          onClick={scrollUpOnePage}
+          aria-label="Scroll up to read older entries"
+          title="Scroll up to read older entries"
+        >
+          ↑
+        </button>
+      )}
 
       {/* FAB to add a new page (logged in only) */}
       {session && !composing && !editingEntry && (
