@@ -41,9 +41,12 @@ export default function LatestBlogNotice({ visible }: LatestBlogNoticeProps) {
 
   useEffect(() => {
     if (!ref.current || !article) return;
+    const el = ref.current;
+
+    gsap.killTweensOf(el);
 
     if (visible) {
-      gsap.to(ref.current, {
+      gsap.to(el, {
         autoAlpha: 1,
         y: 0,
         duration: 0.65,
@@ -54,7 +57,7 @@ export default function LatestBlogNotice({ visible }: LatestBlogNoticeProps) {
       return;
     }
 
-    gsap.to(ref.current, {
+    gsap.to(el, {
       autoAlpha: 0,
       y: 24,
       duration: 0.3,
