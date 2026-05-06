@@ -26,8 +26,8 @@ interface SiteAudioContextType {
 const AUDIO_STORAGE_KEY = 'site-audio-muted';
 const LEGACY_BLOG_AUDIO_STORAGE_KEY = 'blog-audio-muted';
 const AMBIENT_AUDIO_SRC = '/audio/ambient.mp3';
-const BLOG_AUDIO_SRC = '/audio/blog-theme.wav';
-const PHOTOGRAPHY_AUDIO_SRC = '/audio/photography-theme.wav';
+const BLOG_AUDIO_SRC = '/audio/blog-theme.mp3';
+const PHOTOGRAPHY_AUDIO_SRC = '/audio/photography-theme.mp3';
 
 const SiteAudioContext = createContext<SiteAudioContextType | null>(null);
 
