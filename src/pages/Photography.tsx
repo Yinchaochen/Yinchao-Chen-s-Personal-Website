@@ -35,7 +35,7 @@ export default function Photography() {
       .from('scrapbook_entries')
       .select('*')
       .is('deleted_at', null)
-      .order('created_at', { ascending: false })
+      .order('created_at', { ascending: true })
       .range(offset, offset + PAGE_SIZE - 1);
     loadingRef.current = false;
     if (error) {
@@ -63,7 +63,7 @@ export default function Photography() {
   }, [entries.length, hasMore, fetchPage]);
 
   const handleSaved = (saved: Entry, isNew: boolean) => {
-    setEntries(prev => isNew ? [saved, ...prev] : prev.map(e => e.id === saved.id ? saved : e));
+    setEntries(prev => isNew ? [...prev, saved] : prev.map(e => e.id === saved.id ? saved : e));
     setComposing(false);
     setEditingEntry(null);
   };
