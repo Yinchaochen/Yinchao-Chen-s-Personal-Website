@@ -15,3 +15,17 @@ export interface Article {
   updated_at: string;
   deleted_at: string | null;
 }
+
+export interface ScrapbookImage {
+  url: string;
+  rotate: number;
+}
+
+export interface ScrapbookEntry {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  caption: string;
+  images: ScrapbookImage[];
+  deleted_at: string | null;
+}

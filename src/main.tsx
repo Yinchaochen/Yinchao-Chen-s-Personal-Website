@@ -10,6 +10,7 @@ const App = lazy(() => import('./App'));
 const BlogList = lazy(() => import('./pages/BlogList'));
 const BlogPost = lazy(() => import('./pages/BlogPost'));
 const Write = lazy(() => import('./pages/Write'));
+const Photography = lazy(() => import('./pages/Photography'));
 
 function RouteFallback() {
   return (
@@ -42,6 +43,7 @@ createRoot(document.getElementById('root')!).render(
               <Route path="/blog/:slug" element={<BlogPost />} />
               <Route path="/write" element={<Write />} />
               <Route path="/write/:id" element={<Write />} />
+              <Route path="/photography" element={<Photography />} />
             </Route>
           </Routes>
         </Suspense>

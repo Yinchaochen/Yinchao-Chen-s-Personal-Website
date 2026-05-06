@@ -69,6 +69,37 @@ function SectionContent({ id }: { id: string }) {
             />
           </a>
         ))}
+        <button
+          onClick={() => navigate('/photography')}
+          aria-label={lang === 'zh' ? '查看更多照片' : lang === 'de' ? 'Mehr Fotos ansehen' : 'See more photos'}
+          style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            aspectRatio: '1', cursor: 'pointer',
+            background: 'rgba(50, 96, 85, 0.06)',
+            border: '1.5px dashed rgba(50, 96, 85, 0.55)',
+            color: '#326055',
+            transition: 'background 0.25s ease, border-color 0.25s ease, transform 0.25s ease',
+          }}
+          onMouseEnter={e => {
+            const el = e.currentTarget as HTMLElement;
+            el.style.background = 'rgba(50, 96, 85, 0.16)';
+            el.style.borderColor = '#326055';
+            el.style.transform = 'translateY(-1px)';
+          }}
+          onMouseLeave={e => {
+            const el = e.currentTarget as HTMLElement;
+            el.style.background = 'rgba(50, 96, 85, 0.06)';
+            el.style.borderColor = 'rgba(50, 96, 85, 0.55)';
+            el.style.transform = 'translateY(0)';
+          }}
+        >
+          <span className="font-display" style={{
+            fontStyle: 'italic', fontWeight: 700, fontSize: 'max(18px, 1.4vw)',
+            letterSpacing: '0.08em', lineHeight: 1, marginBottom: '4px',
+          }}>
+            …
+          </span>
+        </button>
       </div>
     </div>
   );
