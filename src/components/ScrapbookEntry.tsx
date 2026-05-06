@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import type { ScrapbookEntry as Entry } from '../lib/supabase';
 
 function formatDate(iso: string) {
@@ -25,6 +25,17 @@ function photoSize(count: number, idx: number) {
   return { width: '100%', aspectRatio: ratios[idx % ratios.length] };
 }
 
+function navBtnStyle(side: 'left' | 'right'): CSSProperties {
+  return {
+    position: 'fixed', top: '50%', transform: 'translateY(-50%)',
+    [side]: '24px',
+    width: '44px', height: '44px', borderRadius: '50%',
+    background: 'rgba(255,255,255,0.12)', color: '#f6efde',
+    border: 'none', cursor: 'pointer', fontSize: '28px', lineHeight: 1,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+  };
+}
+
 interface Props {
   entry: Entry;
   editable?: boolean;
@@ -35,6 +46,23 @@ interface Props {
 export default function ScrapbookEntry({ entry, editable, onEdit, onDelete }: Props) {
   const { images, caption, created_at, id } = entry;
   const tapeAlt = (parseInt(id.slice(0, 4), 16) % 2) === 0;
+  const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (lightboxIdx === null) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setLightboxIdx(null);
+      else if (e.key === 'ArrowLeft') setLightboxIdx(i => (i === null ? null : (i - 1 + images.length) % images.length));
+      else if (e.key === 'ArrowRight') setLightboxIdx(i => (i === null ? null : (i + 1) % images.length));
+    };
+    window.addEventListener('keydown', onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [lightboxIdx, images.length]);
 
   return (
     <article className="scrapbook-entry">
@@ -46,8 +74,10 @@ export default function ScrapbookEntry({ entry, editable, onEdit, onDelete }: Pr
             className="scrapbook-photo"
             style={{
               transform: `rotate(${img.rotate}deg)`,
+              cursor: 'zoom-in',
               ...photoSize(images.length, i),
             }}
+            onClick={() => setLightboxIdx(i)}
           >
             {i === 0 && (
               <span className={`scrapbook-tape${tapeAlt ? ' scrapbook-tape--alt' : ''}`} />
@@ -56,6 +86,68 @@ export default function ScrapbookEntry({ entry, editable, onEdit, onDelete }: Pr
           </div>
         ))}
       </div>
+
+      {/* lightbox */}
+      {lightboxIdx !== null && (
+        <div
+          onClick={() => setLightboxIdx(null)}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 100,
+            background: 'rgba(20, 20, 20, 0.92)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'zoom-out',
+            padding: '40px',
+          }}
+        >
+          <img
+            src={images[lightboxIdx].url}
+            alt=""
+            onClick={e => e.stopPropagation()}
+            style={{
+              maxWidth: '100%', maxHeight: '100%',
+              objectFit: 'contain',
+              boxShadow: '0 20px 60px rgba(0,0,0,0.6)',
+              cursor: 'default',
+            }}
+          />
+
+          {/* close */}
+          <button
+            onClick={e => { e.stopPropagation(); setLightboxIdx(null); }}
+            aria-label="Close"
+            style={{
+              position: 'fixed', top: '24px', right: '24px',
+              width: '40px', height: '40px', borderRadius: '50%',
+              background: 'rgba(255,255,255,0.12)', color: '#f6efde',
+              border: 'none', cursor: 'pointer', fontSize: '20px',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+          >×</button>
+
+          {/* prev / next */}
+          {images.length > 1 && (
+            <>
+              <button
+                onClick={e => { e.stopPropagation(); setLightboxIdx(i => i === null ? null : (i - 1 + images.length) % images.length); }}
+                aria-label="Previous"
+                style={navBtnStyle('left')}
+              >‹</button>
+              <button
+                onClick={e => { e.stopPropagation(); setLightboxIdx(i => i === null ? null : (i + 1) % images.length); }}
+                aria-label="Next"
+                style={navBtnStyle('right')}
+              >›</button>
+              <span style={{
+                position: 'fixed', bottom: '24px', left: '50%', transform: 'translateX(-50%)',
+                fontFamily: "'Caveat', cursive", fontSize: '18px',
+                color: 'rgba(246, 239, 222, 0.6)',
+              }}>
+                {lightboxIdx + 1} / {images.length}
+              </span>
+            </>
+          )}
+        </div>
+      )}
 
       {/* caption */}
       {caption.trim() && (
