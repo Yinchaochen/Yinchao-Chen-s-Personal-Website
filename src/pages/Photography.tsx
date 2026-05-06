@@ -230,9 +230,7 @@ function ComposeDrawer({ existing, onClose, onSaved }: ComposeProps) {
       background: 'rgba(44, 46, 44, 0.4)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       padding: '24px',
-    }}
-      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
-    >
+    }}>
       <div style={{
         width: '100%', maxWidth: '560px', maxHeight: '90vh',
         background: '#fdfbf4', overflow: 'auto',
