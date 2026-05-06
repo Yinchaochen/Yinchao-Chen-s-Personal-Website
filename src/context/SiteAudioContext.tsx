@@ -11,7 +11,7 @@ import {
 import { useLocation } from 'react-router-dom';
 import { useManagedAudioPlayback } from '../hooks/useManagedAudioPlayback';
 
-type AudioTrack = 'ambient' | 'blog';
+type AudioTrack = 'ambient' | 'blog' | 'photography';
 
 interface SiteAudioContextType {
   muted: boolean;
@@ -27,6 +27,7 @@ const AUDIO_STORAGE_KEY = 'site-audio-muted';
 const LEGACY_BLOG_AUDIO_STORAGE_KEY = 'blog-audio-muted';
 const AMBIENT_AUDIO_SRC = '/audio/ambient.mp3';
 const BLOG_AUDIO_SRC = '/audio/blog-theme.wav';
+const PHOTOGRAPHY_AUDIO_SRC = '/audio/photography-theme.wav';
 
 const SiteAudioContext = createContext<SiteAudioContextType | null>(null);
 
@@ -42,6 +43,9 @@ function getStoredMutedState() {
 }
 
 function getTrackFromPath(pathname: string): AudioTrack {
+  if (pathname.startsWith('/photography')) {
+    return 'photography';
+  }
   if (pathname.startsWith('/blog') || pathname.startsWith('/write')) {
     return 'blog';
   }
@@ -50,7 +54,9 @@ function getTrackFromPath(pathname: string): AudioTrack {
 }
 
 function getAudioSrc(track: AudioTrack) {
-  return track === 'blog' ? BLOG_AUDIO_SRC : AMBIENT_AUDIO_SRC;
+  if (track === 'photography') return PHOTOGRAPHY_AUDIO_SRC;
+  if (track === 'blog') return BLOG_AUDIO_SRC;
+  return AMBIENT_AUDIO_SRC;
 }
 
 export function SiteAudioProvider({ children }: { children: ReactNode }) {
