@@ -39,12 +39,24 @@ function PinIcon({ section, onHover, onClick, visible }: {
     return () => { pulseRef.current?.kill(); };
   }, [startPulse]);
 
-  /* Visibility */
+  /* Visibility — fade-in matches the 1.45s scene transition; clicks
+     are blocked until the fade completes so a half-faded pin can't
+     interrupt the closing scene tween. */
   useEffect(() => {
     if (!rootRef.current) return;
-    gsap.to(rootRef.current, { opacity: visible ? 1 : 0, duration: 0.5, overwrite: 'auto' });
-    rootRef.current.style.pointerEvents = visible ? 'auto' : 'none';
+    const el = rootRef.current;
+    el.style.pointerEvents = 'none';
     if (!visible) document.body.style.cursor = 'default';
+
+    gsap.to(el, {
+      opacity: visible ? 1 : 0,
+      duration: visible ? 1.45 : 0.5,
+      ease: visible ? 'sine.inOut' : 'power2.in',
+      overwrite: 'auto',
+      onComplete: () => {
+        if (visible) el.style.pointerEvents = 'auto';
+      },
+    });
   }, [visible]);
 
   const handleEnter = () => {
