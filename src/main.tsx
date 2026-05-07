@@ -1,6 +1,7 @@
 import { StrictMode, Suspense, lazy } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { Analytics } from '@vercel/analytics/react';
 import './styles/global.css';
 import { AppProvider } from './context/AppContext';
 import { SiteAudioProvider } from './context/SiteAudioContext';
@@ -47,6 +48,7 @@ createRoot(document.getElementById('root')!).render(
             </Route>
           </Routes>
         </Suspense>
+        <Analytics />
       </SiteAudioProvider>
     </BrowserRouter>
   </StrictMode>,
