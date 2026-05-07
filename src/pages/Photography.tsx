@@ -10,6 +10,24 @@ function randomRotate() {
   return Math.round((Math.random() * 6 - 3) * 10) / 10; // -3..+3 deg
 }
 
+async function makeThumbnail(file: File): Promise<Blob> {
+  const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
+  const scale = Math.min(1, 800 / bitmap.width);
+  const w = Math.round(bitmap.width * scale);
+  const h = Math.round(bitmap.height * scale);
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  canvas.getContext('2d')!.drawImage(bitmap, 0, 0, w, h);
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(
+      b => b ? resolve(b) : reject(new Error('Thumbnail encode failed')),
+      'image/jpeg',
+      0.78,
+    );
+  });
+}
+
 export default function Photography() {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -241,15 +259,30 @@ function ComposeDrawer({ existing, onClose, onSaved }: ComposeProps) {
       const ext = file.name.split('.').pop() ?? 'jpg';
       const safe = file.name.replace(/\.[^.]+$/, '').toLowerCase()
         .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'photo';
-      const path = `scrapbook/${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safe}.${ext}`;
-      const { data, error } = await supabase.storage.from('article-images').upload(path, file);
-      if (error) {
-        alert(`Upload failed: ${error.message}`);
+      const base = `scrapbook/${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safe}`;
+      const origPath = `${base}.${ext}`;
+      const thumbPath = `${base}.thumb.jpg`;
+
+      const { data: origData, error: origErr } = await supabase.storage
+        .from('article-images').upload(origPath, file);
+      if (origErr) {
+        alert(`Upload failed: ${origErr.message}`);
         setUploading(false);
         return;
       }
-      const { data: { publicUrl } } = supabase.storage.from('article-images').getPublicUrl(data.path);
-      next.push({ url: publicUrl, rotate: randomRotate() });
+
+      const thumbBlob = await makeThumbnail(file);
+      const { data: thumbData, error: thumbErr } = await supabase.storage
+        .from('article-images').upload(thumbPath, thumbBlob, { contentType: 'image/jpeg' });
+      if (thumbErr) {
+        alert(`Thumbnail upload failed: ${thumbErr.message}`);
+        setUploading(false);
+        return;
+      }
+
+      const { data: { publicUrl } } = supabase.storage.from('article-images').getPublicUrl(origData.path);
+      const { data: { publicUrl: thumbUrl } } = supabase.storage.from('article-images').getPublicUrl(thumbData.path);
+      next.push({ url: publicUrl, thumb_url: thumbUrl, rotate: randomRotate() });
     }
     setImages(prev => [...prev, ...next]);
     setUploading(false);

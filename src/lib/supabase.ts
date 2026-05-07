@@ -18,6 +18,7 @@ export interface Article {
 
 export interface ScrapbookImage {
   url: string;
+  thumb_url?: string;
   rotate: number;
 }
 

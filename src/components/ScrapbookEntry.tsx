@@ -82,7 +82,7 @@ export default function ScrapbookEntry({ entry, editable, onEdit, onDelete }: Pr
             {i === 0 && (
               <span className={`scrapbook-tape${tapeAlt ? ' scrapbook-tape--alt' : ''}`} />
             )}
-            <img src={img.url} alt="" loading="lazy" />
+            <img src={img.thumb_url ?? img.url} alt="" loading="lazy" decoding="async" />
           </div>
         ))}
       </div>
