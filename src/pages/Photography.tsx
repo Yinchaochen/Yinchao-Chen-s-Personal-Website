@@ -135,10 +135,10 @@ export default function Photography() {
     setEntries(prev => prev.filter(e => e.id !== entry.id));
   };
 
-  const scrollUpOnePage = () => {
+  const scrollToTop = () => {
     const container = containerRef.current;
     if (!container) return;
-    container.scrollBy({ top: -window.innerHeight * 0.7, behavior: 'smooth' });
+    container.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
@@ -207,9 +207,9 @@ export default function Photography() {
       {hasMore && initialScrolled && entries.length > 0 && (
         <button
           className="scrapbook-up-arrow"
-          onClick={scrollUpOnePage}
-          aria-label="Scroll up to read older entries"
-          title="Scroll up to read older entries"
+          onClick={scrollToTop}
+          aria-label="Scroll to top"
+          title="Scroll to top"
         >
           ↑
         </button>
