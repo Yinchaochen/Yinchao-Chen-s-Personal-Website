@@ -8,19 +8,19 @@ const content = {
     zh: {
       title: '编程世界',
       body: '我是一名热爱创造的程序员。从中国的软件工程课堂到德国的编程实践，代码一直是我表达创意的语言。我相信技术不仅是解决问题的工具，更是连接人与世界的桥梁。',
-      project: { name: 'Uchia', desc: '我的软件产品，一个正在开发中的创新项目', link: 'uchia.io' },
+      project: { name: 'Postervia', desc: '我的软件产品，一个正在开发中的创新项目', link: 'postervia.app' },
       tags: ['React', 'TypeScript', 'Node.js', 'Three.js'],
     },
     en: {
       title: 'Code World',
       body: "I'm a programmer passionate about creation. From software engineering classrooms in China to coding practice in Germany, code has always been my language of creativity. I believe technology is not just a problem-solving tool, but a bridge connecting people with the world.",
-      project: { name: 'Uchia', desc: 'My software product — an innovative project in development', link: 'uchia.io' },
+      project: { name: 'Postervia', desc: 'My software product — an innovative project in development', link: 'postervia.app' },
       tags: ['React', 'TypeScript', 'Node.js', 'Three.js'],
     },
     de: {
       title: 'Code-Welt',
       body: 'Ich bin ein Programmierer mit Leidenschaft für Kreation. Von Software-Engineering-Kursen in China bis zur Programmierpraxis in Deutschland — Code war immer meine kreative Sprache.',
-      project: { name: 'Uchia', desc: 'Mein Software-Produkt — ein innovatives Projekt in Entwicklung', link: 'uchia.io' },
+      project: { name: 'Postervia', desc: 'Mein Software-Produkt — ein innovatives Projekt in Entwicklung', link: 'postervia.app' },
       tags: ['React', 'TypeScript', 'Node.js', 'Three.js'],
     },
   },
@@ -221,7 +221,7 @@ export default function SectionView({ onClose }: { onClose: () => void }) {
                 <h3 className="font-display fs-sm" style={{ fontStyle: 'italic', color: 'var(--color-primary)' }}>{c.project.name}</h3>
                 <p className="font-body fs-xs" style={{ marginTop: '6px', opacity: 0.7 }}>{c.project.desc}</p>
                 <a
-                  href="https://uchia.io/" target="_blank" rel="noopener noreferrer"
+                  href="https://postervia.app/" target="_blank" rel="noopener noreferrer"
                   className="font-body fs-xs mm-shadow"
                   style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '12px', color: 'var(--color-primary)', fontWeight: 700, textDecoration: 'underline' }}
                 >

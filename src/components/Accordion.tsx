@@ -28,10 +28,10 @@ function SectionContent({ id }: { id: string }) {
           : 'From software engineering classrooms in China to coding practice in Germany, code has always been my creative language.'}
       </p>
       <div style={{ display:'flex', flexDirection:'column', gap:'6px', marginTop:'12px' }}>
-        <a href="https://uchia.io/" target="_blank" rel="noopener noreferrer"
+        <a href="https://postervia.app/" target="_blank" rel="noopener noreferrer"
           className="font-display fs-sm"
           style={{ fontStyle:'italic', fontWeight:700, color:'inherit', textDecoration:'underline' }}>
-          uchia.io ↗
+          postervia.app ↗
         </a>
         <a href="https://github.com/Yinchaochen" target="_blank" rel="noopener noreferrer"
           className="font-display fs-sm"
