@@ -14,6 +14,29 @@ import { useSiteAudio } from './context/SiteAudioContext';
 
 const SceneCanvas = lazy(() => import('./components/Canvas'));
 
+const PHOTOGRAPHY_PREVIEW_IMAGES = [
+  '/images/P1019454.jpg',
+  '/images/Blues Moment 03.jpg',
+  '/images/P1002527.jpg',
+  '/images/P1019576.jpg',
+  '/images/P1019780.jpg',
+];
+
+const preloadedImages = new Map<string, HTMLImageElement>();
+
+function preloadImages(srcs: string[]) {
+  if (typeof Image === 'undefined') return;
+
+  srcs.forEach((src) => {
+    if (preloadedImages.has(src)) return;
+
+    const image = new Image();
+    image.decoding = 'async';
+    image.src = src;
+    preloadedImages.set(src, image);
+  });
+}
+
 export default function App() {
   const { loaded, setActiveSection, activeSceneId, setActiveSceneId } = useApp();
   const {
@@ -56,6 +79,10 @@ export default function App() {
   }, [playSound]);
 
   const handleOpen = useCallback((s: Section) => {
+    if (s.id === 'photography') {
+      preloadImages(PHOTOGRAPHY_PREVIEW_IMAGES);
+    }
+
     playSceneSwitchSound();
     setActiveSceneId(s.id);
     setTimeout(() => setActiveSection(s), 900);

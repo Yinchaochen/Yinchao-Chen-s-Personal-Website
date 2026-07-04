@@ -62,6 +62,7 @@ function SectionContent({ id }: { id: string }) {
             <LazyImage
               src={src}
               alt=""
+              eager
               containerStyle={{ width:'100%', height:'100%' }}
               style={{ width:'100%', height:'100%', objectFit:'cover', transition:'transform 0.3s', display:'block' }}
               onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform='scale(1.06)'; }}
