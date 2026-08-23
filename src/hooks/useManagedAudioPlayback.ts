@@ -156,6 +156,7 @@ export function useManagedAudioPlayback({
 
     const checkPlayback = () => {
       if (document.hidden) {
+        audio.pause();
         syncPlaybackState();
         return;
       }
