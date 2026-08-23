@@ -11,7 +11,7 @@ import {
 import { useLocation } from 'react-router-dom';
 import { useManagedAudioPlayback } from '../hooks/useManagedAudioPlayback';
 
-type AudioTrack = 'ambient' | 'blog' | 'photography';
+type AudioTrack = 'ambient' | 'library' | 'none';
 
 interface SiteAudioContextType {
   muted: boolean;
@@ -25,11 +25,11 @@ interface SiteAudioContextType {
 
 const AUDIO_STORAGE_KEY = 'site-audio-muted';
 const LEGACY_BLOG_AUDIO_STORAGE_KEY = 'blog-audio-muted';
-const BLOG_LAST_TRACK_STORAGE_KEY = 'blog-audio-last-track';
+const LAST_TRACK_STORAGE_KEY = 'blog-audio-last-track';
 const AMBIENT_AUDIO_SRC = '/audio/ambient.mp3';
-const PHOTOGRAPHY_AUDIO_SRC = '/audio/photography-theme.mp3';
-const BLOG_AUDIO_TRACKS = [
+const LIBRARY_TRACKS = [
   '/audio/blog-theme.mp3',
+  '/audio/photography-theme.mp3',
   '/audio/blog/home-to-you-hidden-tapes.mp3',
   '/audio/blog/solstice-waes-hael.mp3',
   '/audio/blog/returning-christian-wade.mp3',
@@ -38,18 +38,23 @@ const BLOG_AUDIO_TRACKS = [
   '/audio/blog/who-will-remember-a-taylor.mp3',
 ];
 
-function pickBlogAudioSrc() {
-  if (typeof window === 'undefined') return BLOG_AUDIO_TRACKS[0];
+function pickLibraryTrack() {
+  if (typeof window === 'undefined') return LIBRARY_TRACKS[0];
 
-  const lastTrack = window.localStorage.getItem(BLOG_LAST_TRACK_STORAGE_KEY);
-  const candidates = BLOG_AUDIO_TRACKS.filter((track) => track !== lastTrack);
-  const pick = candidates[Math.floor(Math.random() * candidates.length)] ?? BLOG_AUDIO_TRACKS[0];
-  window.localStorage.setItem(BLOG_LAST_TRACK_STORAGE_KEY, pick);
+  const lastTrack = window.localStorage.getItem(LAST_TRACK_STORAGE_KEY);
+  const candidates = LIBRARY_TRACKS.filter((track) => track !== lastTrack);
+  const pick = candidates[Math.floor(Math.random() * candidates.length)] ?? LIBRARY_TRACKS[0];
+  window.localStorage.setItem(LAST_TRACK_STORAGE_KEY, pick);
 
   return pick;
 }
 
-const BLOG_AUDIO_SRC = pickBlogAudioSrc();
+function getRandomizeKey(pathname: string) {
+  const match = pathname.match(/^\/blog\/(.+)$/);
+  if (match) return `post:${match[1]}`;
+  if (pathname.startsWith('/photography')) return 'photography';
+  return null;
+}
 
 const SiteAudioContext = createContext<SiteAudioContextType | null>(null);
 
@@ -65,28 +70,37 @@ function getStoredMutedState() {
 }
 
 function getTrackFromPath(pathname: string): AudioTrack {
-  if (pathname.startsWith('/photography')) {
-    return 'photography';
+  if (pathname.startsWith('/photography') || pathname.startsWith('/write')) {
+    return 'library';
   }
-  if (pathname.startsWith('/blog') || pathname.startsWith('/write')) {
-    return 'blog';
+  if (pathname.startsWith('/blog')) {
+    return getRandomizeKey(pathname) ? 'library' : 'none';
   }
 
   return 'ambient';
 }
 
-function getAudioSrc(track: AudioTrack) {
-  if (track === 'photography') return PHOTOGRAPHY_AUDIO_SRC;
-  if (track === 'blog') return BLOG_AUDIO_SRC;
-  return AMBIENT_AUDIO_SRC;
+function getAudioSrc(track: AudioTrack, librarySrc: string) {
+  if (track === 'ambient') return AMBIENT_AUDIO_SRC;
+  return librarySrc;
 }
 
 export function SiteAudioProvider({ children }: { children: ReactNode }) {
   const location = useLocation();
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [mutedState, setMutedState] = useState(getStoredMutedState);
+  const [librarySrc, setLibrarySrc] = useState(pickLibraryTrack);
+  const randomizeKeyRef = useRef(getRandomizeKey(location.pathname));
   const currentTrack = getTrackFromPath(location.pathname);
-  const audioSrc = getAudioSrc(currentTrack);
+  const audioSrc = getAudioSrc(currentTrack, librarySrc);
+
+  useEffect(() => {
+    const key = getRandomizeKey(location.pathname);
+    if (key && key !== randomizeKeyRef.current) {
+      setLibrarySrc(pickLibraryTrack());
+    }
+    randomizeKeyRef.current = key;
+  }, [location.pathname]);
   const setMuted = useCallback((value: boolean) => {
     setMutedState(value);
   }, []);
@@ -97,7 +111,7 @@ export function SiteAudioProvider({ children }: { children: ReactNode }) {
     stopPlayback: stopAudioPlayback,
   } = useManagedAudioPlayback({
     audioRef,
-    muted: mutedState,
+    muted: mutedState || currentTrack === 'none',
     volume: 0.4,
   });
 
