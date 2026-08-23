@@ -25,9 +25,31 @@ interface SiteAudioContextType {
 
 const AUDIO_STORAGE_KEY = 'site-audio-muted';
 const LEGACY_BLOG_AUDIO_STORAGE_KEY = 'blog-audio-muted';
+const BLOG_LAST_TRACK_STORAGE_KEY = 'blog-audio-last-track';
 const AMBIENT_AUDIO_SRC = '/audio/ambient.mp3';
-const BLOG_AUDIO_SRC = '/audio/blog-theme.mp3';
 const PHOTOGRAPHY_AUDIO_SRC = '/audio/photography-theme.mp3';
+const BLOG_AUDIO_TRACKS = [
+  '/audio/blog-theme.mp3',
+  '/audio/blog/home-to-you-hidden-tapes.mp3',
+  '/audio/blog/solstice-waes-hael.mp3',
+  '/audio/blog/returning-christian-wade.mp3',
+  '/audio/blog/stillbrook-formosa.mp3',
+  '/audio/blog/bending-trees-aur.mp3',
+  '/audio/blog/who-will-remember-a-taylor.mp3',
+];
+
+function pickBlogAudioSrc() {
+  if (typeof window === 'undefined') return BLOG_AUDIO_TRACKS[0];
+
+  const lastTrack = window.localStorage.getItem(BLOG_LAST_TRACK_STORAGE_KEY);
+  const candidates = BLOG_AUDIO_TRACKS.filter((track) => track !== lastTrack);
+  const pick = candidates[Math.floor(Math.random() * candidates.length)] ?? BLOG_AUDIO_TRACKS[0];
+  window.localStorage.setItem(BLOG_LAST_TRACK_STORAGE_KEY, pick);
+
+  return pick;
+}
+
+const BLOG_AUDIO_SRC = pickBlogAudioSrc();
 
 const SiteAudioContext = createContext<SiteAudioContextType | null>(null);
 
