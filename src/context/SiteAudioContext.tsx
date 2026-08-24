@@ -103,6 +103,19 @@ export function SiteAudioProvider({ children }: { children: ReactNode }) {
     }
     randomizeKeyRef.current = key;
   }, [location.pathname]);
+
+  /* When a library track finishes, continue with another random one. */
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio || currentTrack !== 'library') return;
+
+    const handleEnded = () => {
+      setLibrarySrc(pickLibraryTrack());
+    };
+
+    audio.addEventListener('ended', handleEnded);
+    return () => audio.removeEventListener('ended', handleEnded);
+  }, [currentTrack]);
   const setMuted = useCallback((value: boolean) => {
     setMutedState(value);
   }, []);
@@ -147,7 +160,7 @@ export function SiteAudioProvider({ children }: { children: ReactNode }) {
 
   return (
     <SiteAudioContext.Provider value={value}>
-      <audio ref={audioRef} src={audioSrc} loop preload="auto" playsInline autoPlay />
+      <audio ref={audioRef} src={audioSrc} loop={currentTrack === 'ambient'} preload="auto" playsInline autoPlay />
       {children}
     </SiteAudioContext.Provider>
   );
