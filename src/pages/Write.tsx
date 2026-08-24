@@ -225,9 +225,25 @@ export default function Write() {
       void handleImageUpload(imageFiles);
     };
 
-    const dom = editor.view.dom;
-    dom.addEventListener('paste', handlePaste);
-    return () => dom.removeEventListener('paste', handlePaste);
+    /* editor.view only exists once EditorContent has mounted (it hasn't while
+       the auth session is still resolving) — accessing it earlier throws. */
+    let dom: HTMLElement | null = null;
+    const attach = () => {
+      try {
+        dom = editor.view.dom;
+      } catch {
+        return;
+      }
+      dom.addEventListener('paste', handlePaste);
+    };
+
+    attach();
+    if (!dom) editor.once('create', attach);
+
+    return () => {
+      editor.off('create', attach);
+      dom?.removeEventListener('paste', handlePaste);
+    };
   }, [editor, handleImageUpload]);
 
   const save = async () => {
