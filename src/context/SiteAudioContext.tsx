@@ -11,7 +11,7 @@ import {
 import { useLocation } from 'react-router-dom';
 import { useManagedAudioPlayback } from '../hooks/useManagedAudioPlayback';
 
-type AudioTrack = 'ambient' | 'library' | 'none';
+type AudioTrack = 'ambient' | 'library';
 
 interface SiteAudioContextType {
   muted: boolean;
@@ -52,6 +52,7 @@ function pickLibraryTrack() {
 function getRandomizeKey(pathname: string) {
   const match = pathname.match(/^\/blog\/(.+)$/);
   if (match) return `post:${match[1]}`;
+  if (pathname.startsWith('/blog')) return 'blog-list';
   if (pathname.startsWith('/photography')) return 'photography';
   return null;
 }
@@ -70,11 +71,12 @@ function getStoredMutedState() {
 }
 
 function getTrackFromPath(pathname: string): AudioTrack {
-  if (pathname.startsWith('/photography') || pathname.startsWith('/write')) {
+  if (
+    pathname.startsWith('/photography')
+    || pathname.startsWith('/blog')
+    || pathname.startsWith('/write')
+  ) {
     return 'library';
-  }
-  if (pathname.startsWith('/blog')) {
-    return getRandomizeKey(pathname) ? 'library' : 'none';
   }
 
   return 'ambient';
@@ -111,7 +113,7 @@ export function SiteAudioProvider({ children }: { children: ReactNode }) {
     stopPlayback: stopAudioPlayback,
   } = useManagedAudioPlayback({
     audioRef,
-    muted: mutedState || currentTrack === 'none',
+    muted: mutedState,
     volume: 0.4,
   });
 

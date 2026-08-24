@@ -1,4 +1,4 @@
-import { StrictMode, Suspense, lazy } from 'react';
+import { Component, StrictMode, Suspense, lazy, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Analytics } from '@vercel/analytics/react';
@@ -12,6 +12,52 @@ const BlogList = lazy(() => import('./pages/BlogList'));
 const BlogPost = lazy(() => import('./pages/BlogPost'));
 const Write = lazy(() => import('./pages/Write'));
 const Photography = lazy(() => import('./pages/Photography'));
+
+/* Recovers from lazy-chunk load failures (flaky network or a fresh deploy
+   invalidating old chunk names), which otherwise leave a blank page. */
+class ChunkErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+  state = { hasError: false };
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch() {
+    const key = 'chunk-reload-at';
+    const lastReload = Number(window.sessionStorage.getItem(key) ?? 0);
+    if (Date.now() - lastReload > 10000) {
+      window.sessionStorage.setItem(key, String(Date.now()));
+      window.location.reload();
+    }
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div
+          onClick={() => window.location.reload()}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: '#faf9f7',
+            color: '#68142b',
+            fontFamily: "'Libre Baskerville', Georgia, serif",
+            fontStyle: 'italic',
+            fontSize: '18px',
+            cursor: 'pointer',
+          }}
+        >
+          Something went wrong. Tap to reload.
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
 
 function RouteFallback() {
   return (
@@ -36,6 +82,7 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
       <SiteAudioProvider>
+        <ChunkErrorBoundary>
         <Suspense fallback={<RouteFallback />}>
           <Routes>
             <Route path="/" element={<AppProvider><App /></AppProvider>} />
@@ -48,6 +95,7 @@ createRoot(document.getElementById('root')!).render(
             </Route>
           </Routes>
         </Suspense>
+        </ChunkErrorBoundary>
         <Analytics />
       </SiteAudioProvider>
     </BrowserRouter>

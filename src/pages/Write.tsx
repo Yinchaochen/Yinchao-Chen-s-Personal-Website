@@ -154,9 +154,17 @@ export default function Write() {
 
   /* Auth check */
   useEffect(() => {
+    /* If the session request hangs (e.g. slow token refresh), fall back to the
+       login form instead of leaving the page blank forever. */
+    const fallbackId = window.setTimeout(() => {
+      setSession((current) => (current === undefined ? null : current));
+    }, 5000);
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, s) => setSession(s));
-    return () => subscription.unsubscribe();
+    return () => {
+      window.clearTimeout(fallbackId);
+      subscription.unsubscribe();
+    };
   }, []);
 
   /* Load existing article for editing */
@@ -244,7 +252,21 @@ export default function Write() {
   };
 
   /* Loading auth */
-  if (session === undefined) return null;
+  if (session === undefined) {
+    return (
+      <div style={{
+        position: 'fixed', inset: 0, background: '#faf9f7',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>
+        <p style={{
+          fontFamily: "'Libre Baskerville', Georgia, serif",
+          fontSize: '15px', fontStyle: 'italic', color: '#68142b', opacity: 0.6,
+        }}>
+          Loading…
+        </p>
+      </div>
+    );
+  }
   if (!session) return <LoginForm onLogin={() => supabase.auth.getSession().then(({ data }) => setSession(data.session))} />;
 
   return (
