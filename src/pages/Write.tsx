@@ -137,6 +137,7 @@ export default function Write() {
   const [existingSlug, setExistingSlug] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInsertPosRef = useRef<number | null>(null);
+  const uploadImagesRef = useRef<(files: File[]) => void>(() => {});
 
   const editor = useEditor({
     extensions: [
@@ -149,6 +150,19 @@ export default function Write() {
         class: 'write-editor',
         style: 'outline: none; min-height: 60vh;',
         spellcheck: 'false',
+      },
+      /* Intercept image pastes inside ProseMirror's own pipeline. Returning
+         true stops its default handling, which would otherwise also insert
+         the clipboard's HTML flavor (an <img> pointing at a local path that
+         renders as a broken icon). */
+      handlePaste: (view, event) => {
+        const imageFiles = extractImageFilesFromClipboard(event);
+        if (!imageFiles.length) return false;
+
+        imageInsertPosRef.current = view.state.selection.to;
+        event.preventDefault();
+        uploadImagesRef.current(imageFiles);
+        return true;
       },
     },
   });
@@ -215,37 +229,8 @@ export default function Write() {
   }, [editor]);
 
   useEffect(() => {
-    if (!editor) return;
-
-    const handlePaste = (event: ClipboardEvent) => {
-      const imageFiles = extractImageFilesFromClipboard(event);
-      if (!imageFiles.length) return;
-
-      imageInsertPosRef.current = editor.state.selection.to;
-      event.preventDefault();
-      void handleImageUpload(imageFiles);
-    };
-
-    /* editor.view only exists once EditorContent has mounted (it hasn't while
-       the auth session is still resolving) — accessing it earlier throws. */
-    let dom: HTMLElement | null = null;
-    const attach = () => {
-      try {
-        dom = editor.view.dom;
-      } catch {
-        return;
-      }
-      dom.addEventListener('paste', handlePaste);
-    };
-
-    attach();
-    if (!dom) editor.once('create', attach);
-
-    return () => {
-      editor.off('create', attach);
-      dom?.removeEventListener('paste', handlePaste);
-    };
-  }, [editor, handleImageUpload]);
+    uploadImagesRef.current = (files) => { void handleImageUpload(files); };
+  }, [handleImageUpload]);
 
   const save = async () => {
     if (!editor || !title.trim()) { alert('Please add a title.'); return; }
