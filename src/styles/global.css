@@ -108,7 +108,11 @@ h1, h2, h3, h4, h5, h6 {
   filter: drop-shadow(4px 4px var(--color-shadow));
   transition: filter .5s cubic-bezier(.215, .61, .355, 1);
 }
-.mm-shadow:hover { filter: drop-shadow(0 0 transparent); }
+/* Hover-only devices: touch browsers keep :hover stuck after a tap,
+   which would leave the shadow permanently hidden. */
+@media (hover: hover) {
+  .mm-shadow:hover { filter: drop-shadow(0 0 transparent); }
+}
 
 /* Press feedback: sink into the page while pressed, spring back on release */
 .mm-pressable {
