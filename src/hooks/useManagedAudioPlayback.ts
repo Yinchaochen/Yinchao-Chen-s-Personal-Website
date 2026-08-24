@@ -90,12 +90,14 @@ export function useManagedAudioPlayback({
         .catch(() => {});
     };
 
-    document.addEventListener('pointerdown', resume, { once: true });
-    document.addEventListener('keydown', resume, { once: true });
+    /* Not `once`: some in-app browsers (e.g. Instagram) reject the play()
+       triggered by the first gesture, so keep retrying on every gesture
+       until playback succeeds — handlePlaybackSuccess removes these. */
+    const resumeEvents = ['pointerdown', 'touchend', 'click', 'keydown'] as const;
+    resumeEvents.forEach((eventName) => document.addEventListener(eventName, resume));
 
     resumeRef.current = () => {
-      document.removeEventListener('pointerdown', resume);
-      document.removeEventListener('keydown', resume);
+      resumeEvents.forEach((eventName) => document.removeEventListener(eventName, resume));
     };
   }, [audioRef, handlePlaybackSuccess]);
 
