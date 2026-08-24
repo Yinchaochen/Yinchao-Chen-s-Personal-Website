@@ -110,6 +110,17 @@ h1, h2, h3, h4, h5, h6 {
 }
 .mm-shadow:hover { filter: drop-shadow(0 0 transparent); }
 
+/* Press feedback: sink into the page while pressed, spring back on release */
+.mm-pressable {
+  transition:
+    filter .5s cubic-bezier(.215, .61, .355, 1),
+    transform .2s cubic-bezier(.34, 1.56, .64, 1);
+}
+.mm-pressable:active {
+  transform: translate(3px, 3px);
+  filter: drop-shadow(0 0 transparent);
+}
+
 .audio-hint-bubble {
   min-width: 176px;
   max-width: 220px;

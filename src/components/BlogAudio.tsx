@@ -48,7 +48,7 @@ export default function BlogAudio() {
             border: 'none',
             padding: 0,
           }}
-          className="mm-shadow"
+          className="mm-shadow mm-pressable"
         >
           <img
             src="/svgs/audio_bg.svg"
@@ -81,7 +81,7 @@ export default function BlogAudio() {
           border: 'none',
           padding: 0,
         }}
-        className="mm-shadow"
+        className="mm-shadow mm-pressable"
       >
         <img
           src="/svgs/audio_bg.svg"
