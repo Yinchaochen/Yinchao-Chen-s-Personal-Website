@@ -262,6 +262,23 @@ h1, h2, h3, h4, h5, h6 {
   background: rgba(104,20,43,0.06);
 }
 .blog-content img[data-lazy-blog-image="true"].is-loaded { opacity: 1; }
+.blog-content figure, .write-editor figure { margin: 1.5em 0; }
+.blog-content figure img, .write-editor figure img { margin: 0; }
+.blog-content figcaption, .write-editor figcaption {
+  margin-top: 0.75em;
+  text-align: center;
+  font-size: 13px;
+  line-height: 1.6;
+  color: rgba(44,46,44,0.55);
+}
+.write-editor figcaption { position: relative; }
+.write-editor figure.is-empty figcaption::before {
+  content: 'Write a caption…';
+  position: absolute;
+  left: 0; right: 0; top: 0;
+  color: rgba(44,46,44,0.28);
+  pointer-events: none;
+}
 .blog-content hr, .write-editor hr {
   border: none; border-top: 1px solid rgba(44,46,44,0.12);
   margin: 2.5em 0;

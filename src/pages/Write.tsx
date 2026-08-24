@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useEditor, EditorContent } from '@tiptap/react';
+import { Node as TiptapNode } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -67,6 +68,49 @@ const inputStyle: React.CSSProperties = {
   fontFamily: 'Inter, sans-serif', fontSize: '15px', color: '#2c2e2c',
   background: 'transparent', outline: 'none',
 };
+
+/* ── Figure node: an image with an editable caption below it ── */
+const Figure = TiptapNode.create({
+  name: 'figure',
+  group: 'block',
+  content: 'inline*',
+  isolating: true,
+
+  addAttributes() {
+    return {
+      src: {
+        default: null,
+        /* src lives on the inner <img>, not on <figure> */
+        renderHTML: () => ({}),
+      },
+    };
+  },
+
+  parseHTML() {
+    return [{
+      tag: 'figure',
+      contentElement: 'figcaption',
+      getAttrs: (element) => ({ src: element.querySelector('img')?.getAttribute('src') ?? null }),
+    }];
+  },
+
+  renderHTML({ node }) {
+    return ['figure', ['img', { src: node.attrs.src }], ['figcaption', 0]];
+  },
+
+  addKeyboardShortcuts() {
+    return {
+      /* Enter inside a caption moves to a fresh paragraph below the figure
+         instead of splitting the figure in two. */
+      Enter: () => {
+        const { $from } = this.editor.state.selection;
+        if ($from.parent.type.name !== this.name) return false;
+        const after = $from.after();
+        return this.editor.chain().insertContentAt(after, { type: 'paragraph' }).focus(after + 1).run();
+      },
+    };
+  },
+});
 
 function extractImageFilesFromClipboard(event: ClipboardEvent) {
   const files = Array.from(event.clipboardData?.files ?? []).filter((file) => file.type.startsWith('image/'));
@@ -143,7 +187,11 @@ export default function Write() {
     extensions: [
       StarterKit,
       Image.configure({ allowBase64: false }),
-      Placeholder.configure({ placeholder: 'Write something…' }),
+      Figure,
+      Placeholder.configure({
+        showOnlyCurrent: false,
+        placeholder: ({ node }) => (node.type.name === 'figure' ? 'Write a caption…' : 'Write something…'),
+      }),
     ],
     editorProps: {
       attributes: {
@@ -215,7 +263,7 @@ export default function Write() {
 
       const { data: { publicUrl } } = supabase.storage.from('article-images').getPublicUrl(data.path);
       editor.chain().focus().insertContentAt(insertPos, [
-        { type: 'image', attrs: { src: publicUrl } },
+        { type: 'figure', attrs: { src: publicUrl } },
         { type: 'paragraph' },
       ]).run();
       insertPos = editor.state.selection.to;
