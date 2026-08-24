@@ -148,6 +148,7 @@ export default function Write() {
       attributes: {
         class: 'write-editor',
         style: 'outline: none; min-height: 60vh;',
+        spellcheck: 'false',
       },
     },
   });
@@ -352,6 +353,7 @@ export default function Write() {
           value={title}
           onChange={e => setTitle(e.target.value)}
           placeholder="Title"
+          spellCheck={false}
           style={{
             display: 'block', width: '100%',
             fontFamily: "'Libre Baskerville', Georgia, serif",
