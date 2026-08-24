@@ -20,6 +20,7 @@ interface SiteAudioContextType {
   audioBlocked: boolean;
   ensureAudioPlayback: () => void;
   stopAudioPlayback: () => void;
+  nextTrack: () => void;
   currentTrack: AudioTrack;
 }
 
@@ -30,11 +31,14 @@ const AMBIENT_AUDIO_SRC = '/audio/ambient.mp3';
 const LIBRARY_TRACKS = [
   '/audio/blog-theme.mp3',
   '/audio/photography-theme.mp3',
-  '/audio/blog/home-to-you-hidden-tapes.mp3',
-  '/audio/blog/solstice-waes-hael.mp3',
-  '/audio/blog/returning-christian-wade.mp3',
-  '/audio/blog/stillbrook-formosa.mp3',
-  '/audio/blog/bending-trees-aur.mp3',
+  '/audio/blog/home-to-you-hidden-tapes.wav',
+  '/audio/blog/solstice-waes-hael.wav',
+  '/audio/blog/returning-christian-wade.wav',
+  '/audio/blog/stillbrook-formosa.wav',
+  '/audio/blog/bending-trees-aur.wav',
+  '/audio/blog/unfolding-from-somewhere-quiet.wav',
+  '/audio/blog/a-long-distance-between-the-two-the-field-tapes.wav',
+  '/audio/blog/still-home-slo-loris.wav',
   '/audio/blog/who-will-remember-a-taylor.mp3',
 ];
 
@@ -119,6 +123,9 @@ export function SiteAudioProvider({ children }: { children: ReactNode }) {
   const setMuted = useCallback((value: boolean) => {
     setMutedState(value);
   }, []);
+  const nextTrack = useCallback(() => {
+    setLibrarySrc(pickLibraryTrack());
+  }, []);
   const {
     ensurePlayback,
     isBlocked: audioBlocked,
@@ -155,8 +162,9 @@ export function SiteAudioProvider({ children }: { children: ReactNode }) {
     audioBlocked,
     ensureAudioPlayback: ensurePlayback,
     stopAudioPlayback,
+    nextTrack,
     currentTrack,
-  }), [audioBlocked, audioPlaying, currentTrack, ensurePlayback, mutedState, setMuted, stopAudioPlayback]);
+  }), [audioBlocked, audioPlaying, currentTrack, ensurePlayback, mutedState, nextTrack, setMuted, stopAudioPlayback]);
 
   return (
     <SiteAudioContext.Provider value={value}>
