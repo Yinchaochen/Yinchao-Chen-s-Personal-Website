@@ -15,14 +15,15 @@ const Photography = lazy(() => import('./pages/Photography'));
 
 /* Recovers from lazy-chunk load failures (flaky network or a fresh deploy
    invalidating old chunk names), which otherwise leave a blank page. */
-class ChunkErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
-  state = { hasError: false };
+class ChunkErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; message: string }> {
+  state = { hasError: false, message: '' };
 
-  static getDerivedStateFromError() {
-    return { hasError: true };
+  static getDerivedStateFromError(error: unknown) {
+    return { hasError: true, message: error instanceof Error ? `${error.name}: ${error.message}` : String(error) };
   }
 
-  componentDidCatch() {
+  componentDidCatch(error: unknown) {
+    console.error('App crashed:', error);
     const key = 'chunk-reload-at';
     const lastReload = Number(window.sessionStorage.getItem(key) ?? 0);
     if (Date.now() - lastReload > 10000) {
@@ -50,7 +51,12 @@ class ChunkErrorBoundary extends Component<{ children: ReactNode }, { hasError: 
             cursor: 'pointer',
           }}
         >
-          Something went wrong. Tap to reload.
+          <div style={{ textAlign: 'center', padding: '0 24px' }}>
+            <p>Something went wrong. Tap to reload.</p>
+            <p style={{ fontFamily: 'Inter, sans-serif', fontStyle: 'normal', fontSize: '12px', opacity: 0.55, marginTop: '16px', wordBreak: 'break-word' }}>
+              {this.state.message}
+            </p>
+          </div>
         </div>
       );
     }
