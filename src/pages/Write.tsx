@@ -174,7 +174,9 @@ export default function Write() {
       if (!data) return;
       setTitle(data.title);
       setExistingSlug(data.slug);
-      editor.commands.setContent(data.content);
+      /* Keep the initial load out of the undo history, so Ctrl+Z can never
+         wipe the article back to an empty document. */
+      editor.chain().setMeta('addToHistory', false).setContent(data.content).run();
     });
   }, [articleId, editor]);
 
@@ -230,6 +232,10 @@ export default function Write() {
 
   const save = async () => {
     if (!editor || !title.trim()) { alert('Please add a title.'); return; }
+    if (articleId && existingSlug && editor.isEmpty) {
+      alert('The editor is empty — publishing would erase this article. Reload the page to restore its content.');
+      return;
+    }
     setSaving(true);
     const content = editor.getHTML();
     const now = new Date().toISOString();
