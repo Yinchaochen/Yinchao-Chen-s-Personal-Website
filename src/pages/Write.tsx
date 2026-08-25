@@ -3,7 +3,6 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useEditor, EditorContent } from '@tiptap/react';
 import { Node as TiptapNode } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
-import Image from '@tiptap/extension-image';
 import Placeholder from '@tiptap/extension-placeholder';
 import { supabase } from '../lib/supabase';
 import type { Session } from '@supabase/supabase-js';
@@ -87,11 +86,22 @@ const Figure = TiptapNode.create({
   },
 
   parseHTML() {
-    return [{
-      tag: 'figure',
-      contentElement: 'figcaption',
-      getAttrs: (element) => ({ src: element.querySelector('img')?.getAttribute('src') ?? null }),
-    }];
+    return [
+      {
+        tag: 'figure',
+        contentElement: 'figcaption',
+        getAttrs: (element) => ({ src: element.querySelector('img')?.getAttribute('src') ?? null }),
+      },
+      /* Standalone images (articles written before captions existed)
+         also become figures, so every image gets a caption box. */
+      {
+        tag: 'img[src]',
+        getAttrs: (element) => {
+          const src = element.getAttribute('src');
+          return src && !src.startsWith('data:') ? { src } : false;
+        },
+      },
+    ];
   },
 
   renderHTML({ node }) {
@@ -186,7 +196,6 @@ export default function Write() {
   const editor = useEditor({
     extensions: [
       StarterKit,
-      Image.configure({ allowBase64: false }),
       Figure,
       Placeholder.configure({
         showOnlyCurrent: false,
