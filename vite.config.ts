@@ -14,7 +14,6 @@ export default defineConfig({
             '@tiptap/extension-image',
             '@tiptap/extension-placeholder',
           ],
-          'supabase-vendor': ['@supabase/supabase-js'],
         },
       },
     },
