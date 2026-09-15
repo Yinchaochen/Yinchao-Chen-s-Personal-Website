@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { supabase, type Article } from '../lib/supabase';
-import type { Session } from '@supabase/supabase-js';
+import { getArticles, hasSession, type Article } from '../lib/api';
 
 function stripHtml(html: string) {
   return html.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
@@ -17,21 +16,12 @@ export default function BlogList() {
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
-  const [session, setSession] = useState<Session | null>(null);
+  const [session] = useState(hasSession);
 
   useEffect(() => {
-    supabase.from('articles').select('*').is('deleted_at', null).order('published_at', { ascending: false })
-      .then(
-        ({ data, error }) => {
-          setArticles(data ?? []);
-          setFailed(Boolean(error));
-          setLoading(false);
-        },
-        /* Network failure (e.g. the database is unreachable) rejects the
-           promise — without this the page hangs on "Loading..." forever. */
-        () => { setFailed(true); setLoading(false); },
-      );
-    supabase.auth.getSession().then(({ data }) => setSession(data.session)).catch(() => {});
+    getArticles()
+      .then((rows) => { setArticles(rows); setLoading(false); })
+      .catch(() => { setFailed(true); setLoading(false); });
   }, []);
 
   return (

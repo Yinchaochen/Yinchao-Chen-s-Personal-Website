@@ -1,5 +1,5 @@
 import { useEffect, useState, type CSSProperties } from 'react';
-import type { ScrapbookEntry as Entry } from '../lib/supabase';
+import type { ScrapbookEntry as Entry } from '../lib/api';
 
 function formatDate(iso: string) {
   const d = new Date(iso);

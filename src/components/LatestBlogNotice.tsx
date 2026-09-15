@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import gsap from 'gsap';
-import { supabase } from '../lib/supabase';
+import { getArticles } from '../lib/api';
 
 interface LatestBlogNoticeProps {
   visible: boolean;
@@ -27,16 +27,9 @@ export default function LatestBlogNotice({ visible }: LatestBlogNoticeProps) {
   const [article, setArticle] = useState<LatestArticleSummary | null>(null);
 
   useEffect(() => {
-    supabase
-      .from('articles')
-      .select('slug, title, published_at')
-      .is('deleted_at', null)
-      .order('published_at', { ascending: false })
-      .limit(1)
-      .then(({ data, error }) => {
-        if (error) return;
-        setArticle((data?.[0] as LatestArticleSummary | undefined) ?? null);
-      });
+    getArticles()
+      .then((rows) => setArticle(rows[0] ?? null))
+      .catch(() => {});
   }, []);
 
   useEffect(() => {

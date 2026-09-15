@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import { supabase, type Article } from '../lib/supabase';
-import type { Session } from '@supabase/supabase-js';
+import { getArticleBySlug, hasSession, type Article } from '../lib/api';
 import LazyImage from '../components/LazyImage';
 
 function formatDate(iso: string) {
@@ -29,23 +28,14 @@ export default function BlogPost() {
   const navigate = useNavigate();
   const [article, setArticle] = useState<Article | null>(null);
   const [loading, setLoading] = useState(true);
-  const [session, setSession] = useState<Session | null>(null);
+  const [session] = useState(hasSession);
   const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!slug) return;
-    supabase.from('articles').select('*').eq('slug', slug).is('deleted_at', null).single()
-      .then(
-        ({ data, error }) => {
-          if (error || !data) { navigate('/blog'); return; }
-          setArticle(data);
-          setLoading(false);
-        },
-        /* Network failure rejects the promise — without this the page
-           hangs on "Loading..." forever. */
-        () => navigate('/blog'),
-      );
-    supabase.auth.getSession().then(({ data }) => setSession(data.session)).catch(() => {});
+    getArticleBySlug(slug)
+      .then((data) => { setArticle(data); setLoading(false); })
+      .catch(() => navigate('/blog'));
   }, [slug, navigate]);
 
   const htmlContent = useMemo(

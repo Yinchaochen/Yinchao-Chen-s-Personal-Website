@@ -4,12 +4,18 @@ import { useEditor, EditorContent } from '@tiptap/react';
 import { Node as TiptapNode } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
-import { supabase } from '../lib/supabase';
-import type { Session } from '@supabase/supabase-js';
+import {
+  createArticle,
+  getArticleById,
+  hasSession,
+  signIn,
+  signOut,
+  updateArticle,
+  uploadImage,
+} from '../lib/api';
 
 /* ── Auth gate ────────────────────────────────────────── */
 function LoginForm({ onLogin }: { onLogin: () => void }) {
-  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -17,9 +23,13 @@ function LoginForm({ onLogin }: { onLogin: () => void }) {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true); setError('');
-    const { error: err } = await supabase.auth.signInWithPassword({ email, password });
-    if (err) { setError(err.message); setLoading(false); }
-    else onLogin();
+    try {
+      await signIn(password);
+      onLogin();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Login failed');
+      setLoading(false);
+    }
   };
 
   return (
@@ -36,14 +46,9 @@ function LoginForm({ onLogin }: { onLogin: () => void }) {
           Sign In
         </h1>
         <input
-          type="email" placeholder="Email" value={email}
-          onChange={e => setEmail(e.target.value)} required
-          style={inputStyle}
-        />
-        <input
           type="password" placeholder="Password" value={password}
           onChange={e => setPassword(e.target.value)} required
-          style={{ ...inputStyle, marginTop: '12px' }}
+          style={inputStyle}
         />
         {error && <p style={{ fontSize: '13px', color: '#c0485a', marginTop: '10px' }}>{error}</p>}
         <button type="submit" disabled={loading} style={{
@@ -184,7 +189,7 @@ function Toolbar({ editor, onImageUpload }: {
 export default function Write() {
   const { id: articleId } = useParams<{ id?: string }>();
   const navigate = useNavigate();
-  const [session, setSession] = useState<Session | null | undefined>(undefined);
+  const [authed, setAuthed] = useState(hasSession);
   const [title, setTitle] = useState('');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -224,32 +229,16 @@ export default function Write() {
     },
   });
 
-  /* Auth check */
-  useEffect(() => {
-    /* If the session request hangs (e.g. slow token refresh), fall back to the
-       login form instead of leaving the page blank forever. */
-    const fallbackId = window.setTimeout(() => {
-      setSession((current) => (current === undefined ? null : current));
-    }, 5000);
-    supabase.auth.getSession().then(({ data }) => setSession(data.session));
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, s) => setSession(s));
-    return () => {
-      window.clearTimeout(fallbackId);
-      subscription.unsubscribe();
-    };
-  }, []);
-
   /* Load existing article for editing */
   useEffect(() => {
     if (!articleId || !editor) return;
-    supabase.from('articles').select('*').eq('id', articleId).is('deleted_at', null).single().then(({ data }) => {
-      if (!data) return;
+    getArticleById(articleId).then((data) => {
       setTitle(data.title);
       setExistingSlug(data.slug);
       /* Keep the initial load out of the undo history, so Ctrl+Z can never
          wipe the article back to an empty document. */
       editor.chain().setMeta('addToHistory', false).setContent(data.content).run();
-    });
+    }).catch(() => {});
   }, [articleId, editor]);
 
   const handleImageUpload = useCallback(async (files: FileList | File[]) => {
@@ -264,13 +253,14 @@ export default function Write() {
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-|-$/g, '') || 'image';
       const path = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safeName}.${ext}`;
-      const { data, error } = await supabase.storage.from('article-images').upload(path, file);
-      if (error) {
-        alert(`Image upload failed for "${file.name}": ${error.message}`);
+      let publicUrl: string;
+      try {
+        publicUrl = await uploadImage(file, path);
+      } catch (err) {
+        alert(`Image upload failed for "${file.name}": ${err instanceof Error ? err.message : err}`);
         return;
       }
 
-      const { data: { publicUrl } } = supabase.storage.from('article-images').getPublicUrl(data.path);
       editor.chain().focus().insertContentAt(insertPos, [
         { type: 'figure', attrs: { src: publicUrl } },
         { type: 'paragraph' },
@@ -297,18 +287,19 @@ export default function Write() {
     }
     setSaving(true);
     const content = editor.getHTML();
-    const now = new Date().toISOString();
 
-    if (articleId && existingSlug) {
-      /* Update */
-      const { error } = await supabase.from('articles').update({ title, content, updated_at: now }).eq('id', articleId);
-      if (error) alert('Save failed: ' + error.message);
-    } else {
-      /* Insert */
-      const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + Date.now();
-      const { data, error } = await supabase.from('articles').insert({ slug, title, content, published_at: now, updated_at: now }).select().single();
-      if (error) { alert('Save failed: ' + error.message); setSaving(false); return; }
-      navigate(`/write/${data.id}`, { replace: true });
+    try {
+      if (articleId && existingSlug) {
+        await updateArticle(articleId, { title, content });
+      } else {
+        const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + Date.now();
+        const data = await createArticle({ slug, title, content });
+        navigate(`/write/${data.id}`, { replace: true });
+      }
+    } catch (err) {
+      alert('Save failed: ' + (err instanceof Error ? err.message : err));
+      setSaving(false);
+      return;
     }
 
     setSaving(false);
@@ -316,23 +307,7 @@ export default function Write() {
     setTimeout(() => setSaved(false), 2000);
   };
 
-  /* Loading auth */
-  if (session === undefined) {
-    return (
-      <div style={{
-        position: 'fixed', inset: 0, background: '#faf9f7',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-      }}>
-        <p style={{
-          fontFamily: "'Libre Baskerville', Georgia, serif",
-          fontSize: '15px', fontStyle: 'italic', color: '#68142b', opacity: 0.6,
-        }}>
-          Loading…
-        </p>
-      </div>
-    );
-  }
-  if (!session) return <LoginForm onLogin={() => supabase.auth.getSession().then(({ data }) => setSession(data.session))} />;
+  if (!authed) return <LoginForm onLogin={() => setAuthed(true)} />;
 
   return (
     <div style={{ position: 'fixed', inset: 0, overflowY: 'auto', background: '#faf9f7' }}>
@@ -376,7 +351,7 @@ export default function Write() {
           }}>
             {saved ? 'Saved ✓' : saving ? 'Saving…' : 'Publish'}
           </button>
-          <button onClick={() => supabase.auth.signOut()} style={{
+          <button onClick={() => { signOut(); setAuthed(false); }} style={{
             fontFamily: 'Inter, sans-serif', fontSize: '12px',
             color: '#2c2e2c', opacity: 0.35, cursor: 'pointer',
             background: 'none', border: 'none',

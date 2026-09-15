@@ -1,7 +1,15 @@
 import { useEffect, useLayoutEffect, useRef, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import type { Session } from '@supabase/supabase-js';
-import { supabase, type ScrapbookEntry as Entry, type ScrapbookImage } from '../lib/supabase';
+import {
+  createScrapbook,
+  deleteScrapbook,
+  hasSession,
+  listScrapbook,
+  updateScrapbook,
+  uploadImage,
+  type ScrapbookEntry as Entry,
+  type ScrapbookImage,
+} from '../lib/api';
 import ScrapbookEntry from '../components/ScrapbookEntry';
 
 const PAGE_SIZE = 8;
@@ -33,7 +41,7 @@ export default function Photography() {
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
   const [initialScrolled, setInitialScrolled] = useState(false);
-  const [session, setSession] = useState<Session | null>(null);
+  const [session] = useState(hasSession);
   const [composing, setComposing] = useState(false);
   const [editingEntry, setEditingEntry] = useState<Entry | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -42,32 +50,23 @@ export default function Photography() {
   const loadedCountRef = useRef(0);
   const preserveScrollRef = useRef<{ height: number; top: number } | null>(null);
 
-  /* auth */
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setSession(data.session));
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, s) => setSession(s));
-    return () => subscription.unsubscribe();
-  }, []);
-
   /* Fetch newest-first from DB, but display ascending. Each call loads
      one page of older entries and prepends to the array. */
   const fetchOlder = useCallback(async () => {
     if (loadingRef.current) return;
     loadingRef.current = true;
     const offset = loadedCountRef.current;
-    const { data, error } = await supabase
-      .from('scrapbook_entries')
-      .select('*')
-      .is('deleted_at', null)
-      .order('created_at', { ascending: false })
-      .range(offset, offset + PAGE_SIZE - 1);
-    loadingRef.current = false;
-    if (error) {
+    let data: Entry[];
+    try {
+      data = await listScrapbook(offset, PAGE_SIZE);
+    } catch (error) {
+      loadingRef.current = false;
       console.error(error);
       setLoading(false);
       return;
     }
-    const rows = ((data ?? []) as Entry[]).slice().reverse();
+    loadingRef.current = false;
+    const rows = data.slice().reverse();
     const isInitial = offset === 0;
     if (!isInitial && containerRef.current) {
       // Capture scroll metrics so layout effect can restore the view
@@ -127,11 +126,12 @@ export default function Photography() {
 
   const handleDelete = async (entry: Entry) => {
     if (!confirm('Delete this page?')) return;
-    const { error } = await supabase
-      .from('scrapbook_entries')
-      .update({ deleted_at: new Date().toISOString() })
-      .eq('id', entry.id);
-    if (error) { alert('Delete failed: ' + error.message); return; }
+    try {
+      await deleteScrapbook(entry.id);
+    } catch (error) {
+      alert('Delete failed: ' + (error instanceof Error ? error.message : error));
+      return;
+    }
     setEntries(prev => prev.filter(e => e.id !== entry.id));
   };
 
@@ -263,25 +263,18 @@ function ComposeDrawer({ existing, onClose, onSaved }: ComposeProps) {
       const origPath = `${base}.${ext}`;
       const thumbPath = `${base}.thumb.jpg`;
 
-      const { data: origData, error: origErr } = await supabase.storage
-        .from('article-images').upload(origPath, file);
-      if (origErr) {
-        alert(`Upload failed: ${origErr.message}`);
+      let publicUrl: string;
+      let thumbUrl: string;
+      try {
+        publicUrl = await uploadImage(file, origPath);
+        const thumbBlob = await makeThumbnail(file);
+        thumbUrl = await uploadImage(thumbBlob, thumbPath);
+      } catch (error) {
+        alert(`Upload failed: ${error instanceof Error ? error.message : error}`);
         setUploading(false);
         return;
       }
 
-      const thumbBlob = await makeThumbnail(file);
-      const { data: thumbData, error: thumbErr } = await supabase.storage
-        .from('article-images').upload(thumbPath, thumbBlob, { contentType: 'image/jpeg' });
-      if (thumbErr) {
-        alert(`Thumbnail upload failed: ${thumbErr.message}`);
-        setUploading(false);
-        return;
-      }
-
-      const { data: { publicUrl } } = supabase.storage.from('article-images').getPublicUrl(origData.path);
-      const { data: { publicUrl: thumbUrl } } = supabase.storage.from('article-images').getPublicUrl(thumbData.path);
       next.push({ url: publicUrl, thumb_url: thumbUrl, rotate: randomRotate() });
     }
     setImages(prev => [...prev, ...next]);
@@ -294,25 +287,15 @@ function ComposeDrawer({ existing, onClose, onSaved }: ComposeProps) {
     if (images.length === 0) { alert('Add at least one photo.'); return; }
     setSaving(true);
     const payload = { caption, images };
-    if (existing) {
-      const { data, error } = await supabase
-        .from('scrapbook_entries')
-        .update({ ...payload, updated_at: new Date().toISOString() })
-        .eq('id', existing.id)
-        .select()
-        .single();
+    try {
+      const data = existing
+        ? await updateScrapbook(existing.id, payload)
+        : await createScrapbook(payload);
       setSaving(false);
-      if (error) { alert('Save failed: ' + error.message); return; }
-      onSaved(data as Entry, false);
-    } else {
-      const { data, error } = await supabase
-        .from('scrapbook_entries')
-        .insert(payload)
-        .select()
-        .single();
+      onSaved(data, !existing);
+    } catch (error) {
       setSaving(false);
-      if (error) { alert('Save failed: ' + error.message); return; }
-      onSaved(data as Entry, true);
+      alert('Save failed: ' + (error instanceof Error ? error.message : error));
     }
   };
 
