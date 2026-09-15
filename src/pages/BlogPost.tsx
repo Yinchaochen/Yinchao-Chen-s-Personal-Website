@@ -35,12 +35,17 @@ export default function BlogPost() {
   useEffect(() => {
     if (!slug) return;
     supabase.from('articles').select('*').eq('slug', slug).is('deleted_at', null).single()
-      .then(({ data, error }) => {
-        if (error || !data) { navigate('/blog'); return; }
-        setArticle(data);
-        setLoading(false);
-      });
-    supabase.auth.getSession().then(({ data }) => setSession(data.session));
+      .then(
+        ({ data, error }) => {
+          if (error || !data) { navigate('/blog'); return; }
+          setArticle(data);
+          setLoading(false);
+        },
+        /* Network failure rejects the promise — without this the page
+           hangs on "Loading..." forever. */
+        () => navigate('/blog'),
+      );
+    supabase.auth.getSession().then(({ data }) => setSession(data.session)).catch(() => {});
   }, [slug, navigate]);
 
   const htmlContent = useMemo(

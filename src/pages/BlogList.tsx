@@ -16,12 +16,22 @@ function formatDate(iso: string) {
 export default function BlogList() {
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
 
   useEffect(() => {
     supabase.from('articles').select('*').is('deleted_at', null).order('published_at', { ascending: false })
-      .then(({ data }) => { setArticles(data ?? []); setLoading(false); });
-    supabase.auth.getSession().then(({ data }) => setSession(data.session));
+      .then(
+        ({ data, error }) => {
+          setArticles(data ?? []);
+          setFailed(Boolean(error));
+          setLoading(false);
+        },
+        /* Network failure (e.g. the database is unreachable) rejects the
+           promise — without this the page hangs on "Loading..." forever. */
+        () => { setFailed(true); setLoading(false); },
+      );
+    supabase.auth.getSession().then(({ data }) => setSession(data.session)).catch(() => {});
   }, []);
 
   return (
@@ -66,7 +76,13 @@ export default function BlogList() {
           </p>
         )}
 
-        {!loading && articles.length === 0 && (
+        {!loading && failed && (
+          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '14px', color: '#2c2e2c', opacity: 0.5 }}>
+            Couldn't load articles. Please check your connection and refresh.
+          </p>
+        )}
+
+        {!loading && !failed && articles.length === 0 && (
           <div style={{ textAlign: 'center', paddingTop: '80px' }}>
             <p style={{
               fontFamily: "'Libre Baskerville', Georgia, serif",
