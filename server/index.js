@@ -21,6 +21,12 @@ if (!DATABASE_URL || !ADMIN_PASSWORD || !JWT_SECRET) {
 }
 
 const pool = new pg.Pool({ connectionString: DATABASE_URL });
+/* An idle client losing its connection emits 'error'; without a handler
+   that event crashes the whole process. */
+pool.on('error', (err) => console.error('pg pool error (ignored):', err.message));
+
+/* Route async errors to Express instead of crashing on unhandled rejections. */
+const wrap = (fn) => (req, res, next) => fn(req, res, next).catch(next);
 
 async function initSchema() {
   await pool.query(`
@@ -71,41 +77,41 @@ app.post('/api/login', (req, res) => {
 });
 
 /* ── Articles ── */
-app.get('/api/articles', async (_req, res) => {
+app.get('/api/articles', wrap(async (_req, res) => {
   const { rows } = await pool.query(
     'SELECT * FROM articles WHERE deleted_at IS NULL ORDER BY published_at DESC',
   );
   res.json(rows);
-});
+}));
 
-app.get('/api/articles/slug/:slug', async (req, res) => {
+app.get('/api/articles/slug/:slug', wrap(async (req, res) => {
   const { rows } = await pool.query(
     'SELECT * FROM articles WHERE slug = $1 AND deleted_at IS NULL',
     [req.params.slug],
   );
   if (!rows[0]) return res.status(404).json({ error: 'Not found' });
   res.json(rows[0]);
-});
+}));
 
-app.get('/api/articles/:id', async (req, res) => {
+app.get('/api/articles/:id', wrap(async (req, res) => {
   const { rows } = await pool.query(
     'SELECT * FROM articles WHERE id = $1 AND deleted_at IS NULL',
     [req.params.id],
   );
   if (!rows[0]) return res.status(404).json({ error: 'Not found' });
   res.json(rows[0]);
-});
+}));
 
-app.post('/api/articles', requireAuth, async (req, res) => {
+app.post('/api/articles', requireAuth, wrap(async (req, res) => {
   const { slug, title, content } = req.body;
   const { rows } = await pool.query(
     'INSERT INTO articles (slug, title, content) VALUES ($1, $2, $3) RETURNING *',
     [slug, title, content],
   );
   res.json(rows[0]);
-});
+}));
 
-app.put('/api/articles/:id', requireAuth, async (req, res) => {
+app.put('/api/articles/:id', requireAuth, wrap(async (req, res) => {
   const { title, content } = req.body;
   const { rows } = await pool.query(
     'UPDATE articles SET title = $1, content = $2, updated_at = now() WHERE id = $3 RETURNING *',
@@ -113,10 +119,10 @@ app.put('/api/articles/:id', requireAuth, async (req, res) => {
   );
   if (!rows[0]) return res.status(404).json({ error: 'Not found' });
   res.json(rows[0]);
-});
+}));
 
 /* ── Scrapbook ── */
-app.get('/api/scrapbook', async (req, res) => {
+app.get('/api/scrapbook', wrap(async (req, res) => {
   const offset = Number(req.query.offset ?? 0);
   const limit = Math.min(Number(req.query.limit ?? 10), 50);
   const { rows } = await pool.query(
@@ -124,18 +130,18 @@ app.get('/api/scrapbook', async (req, res) => {
     [offset, limit],
   );
   res.json(rows);
-});
+}));
 
-app.post('/api/scrapbook', requireAuth, async (req, res) => {
+app.post('/api/scrapbook', requireAuth, wrap(async (req, res) => {
   const { caption = '', images = [] } = req.body;
   const { rows } = await pool.query(
     'INSERT INTO scrapbook_entries (caption, images) VALUES ($1, $2) RETURNING *',
     [caption, JSON.stringify(images)],
   );
   res.json(rows[0]);
-});
+}));
 
-app.put('/api/scrapbook/:id', requireAuth, async (req, res) => {
+app.put('/api/scrapbook/:id', requireAuth, wrap(async (req, res) => {
   const { caption = '', images = [] } = req.body;
   const { rows } = await pool.query(
     'UPDATE scrapbook_entries SET caption = $1, images = $2, updated_at = now() WHERE id = $3 RETURNING *',
@@ -143,15 +149,15 @@ app.put('/api/scrapbook/:id', requireAuth, async (req, res) => {
   );
   if (!rows[0]) return res.status(404).json({ error: 'Not found' });
   res.json(rows[0]);
-});
+}));
 
-app.delete('/api/scrapbook/:id', requireAuth, async (req, res) => {
+app.delete('/api/scrapbook/:id', requireAuth, wrap(async (req, res) => {
   await pool.query(
     'UPDATE scrapbook_entries SET deleted_at = now() WHERE id = $1',
     [req.params.id],
   );
   res.json({ ok: true });
-});
+}));
 
 /* ── Images: upload to the volume, serve statically ── */
 const uploadHandler = multer({ storage: multer.memoryStorage(), limits: { fileSize: 30 * 1024 * 1024 } });
@@ -172,6 +178,11 @@ app.use('/images', express.static(UPLOAD_DIR, { maxAge: '365d', immutable: true 
 
 app.get('/health', (_req, res) => res.json({ ok: true }));
 
+app.use((err, _req, res, _next) => {
+  console.error('Request error:', err);
+  res.status(500).json({ error: 'Internal error' });
+});
+
 /* Refuse to start if the upload dir is not on a mounted volume: files
    written to the container's ephemeral filesystem vanish on redeploy.
    A mounted dir lives on a different device than the root filesystem. */
@@ -188,7 +199,13 @@ initSchema()
   .then(() => {
     assertUploadDirIsOnVolume();
     fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-    app.listen(PORT, () => console.log(`API listening on :${PORT}`));
+    const server = app.listen(PORT, () => console.log(`API listening on :${PORT}`));
+    /* Exit 0 on SIGTERM so routine deploy replacements aren't reported
+       as crashes. */
+    process.on('SIGTERM', () => {
+      server.close(() => process.exit(0));
+      setTimeout(() => process.exit(0), 3000).unref();
+    });
   })
   .catch((err) => {
     console.error('Schema init failed:', err);
