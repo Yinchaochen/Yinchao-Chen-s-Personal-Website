@@ -172,8 +172,21 @@ app.use('/images', express.static(UPLOAD_DIR, { maxAge: '365d', immutable: true 
 
 app.get('/health', (_req, res) => res.json({ ok: true }));
 
+/* Refuse to start if the upload dir is not on a mounted volume: files
+   written to the container's ephemeral filesystem vanish on redeploy.
+   A mounted dir lives on a different device than the root filesystem. */
+function assertUploadDirIsOnVolume() {
+  if (!process.env.RAILWAY_ENVIRONMENT) return; // local dev has no volume
+  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+  if (fs.statSync(UPLOAD_DIR).dev === fs.statSync('/').dev) {
+    console.error(`FATAL: ${UPLOAD_DIR} is NOT on a mounted volume — uploads would be lost on redeploy.`);
+    process.exit(1);
+  }
+}
+
 initSchema()
   .then(() => {
+    assertUploadDirIsOnVolume();
     fs.mkdirSync(UPLOAD_DIR, { recursive: true });
     app.listen(PORT, () => console.log(`API listening on :${PORT}`));
   })
