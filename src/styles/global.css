@@ -403,8 +403,10 @@ h1, h2, h3, h4, h5, h6 {
 
 .scrapbook-fab {
   position: fixed;
-  right: 28px;
-  bottom: 84px;
+  /* Centered above the audio controls (mute at bottom 24 + next track at
+     bottom 76, both 44px wide at right 24) so nothing overlaps. */
+  right: 20px;
+  bottom: 132px;
   z-index: 30;
   width: 52px;
   height: 52px;
