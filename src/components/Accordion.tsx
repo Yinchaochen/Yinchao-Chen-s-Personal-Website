@@ -165,13 +165,13 @@ function SectionContent({ id }: { id: string }) {
           </div>
         ))}
       </div>
-      {/* Blog entry point */}
-      <div style={{ marginTop:'14px' }}>
+      {/* Blog & Journal entry points */}
+      <div style={{ marginTop:'14px', display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px' }}>
         <button
           onClick={() => navigate('/blog')}
           className="font-body fs-xs"
           style={{
-            width:'100%', padding:'8px 0', border:'1px solid rgba(68,0,141,0.35)',
+            padding:'8px 0', border:'1px solid rgba(68,0,141,0.35)',
             background:'transparent', color:'#44008d', cursor:'pointer',
             fontSize:'max(10px,0.65vw)', letterSpacing:'0.06em', textTransform:'uppercase',
             transition:'background 0.2s',
@@ -180,6 +180,20 @@ function SectionContent({ id }: { id: string }) {
           onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background='transparent'; }}
         >
           Blog
+        </button>
+        <button
+          onClick={() => navigate('/journal')}
+          className="font-body fs-xs"
+          style={{
+            padding:'8px 0', border:'1px solid rgba(68,0,141,0.35)',
+            background:'transparent', color:'#44008d', cursor:'pointer',
+            fontSize:'max(10px,0.65vw)', letterSpacing:'0.06em', textTransform:'uppercase',
+            transition:'background 0.2s',
+          }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background='rgba(68,0,141,0.08)'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background='transparent'; }}
+        >
+          Journal
         </button>
       </div>
     </div>

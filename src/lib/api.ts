@@ -84,6 +84,23 @@ export const updateScrapbook = (id: string, data: { caption: string; images: Scr
 export const deleteScrapbook = (id: string) =>
   request<{ ok: boolean }>(`/api/scrapbook/${id}`, { method: 'DELETE' });
 
+export interface Writing {
+  id: string;
+  title: string;
+  body: string;
+  published_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
+export const listWritings = () => request<Writing[]>('/api/writings');
+export const createWriting = (data: { title: string; body: string }) =>
+  request<Writing>('/api/writings', { method: 'POST', body: JSON.stringify(data) });
+export const updateWriting = (id: string, data: { title: string; body: string }) =>
+  request<Writing>(`/api/writings/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+export const deleteWriting = (id: string) =>
+  request<{ ok: boolean }>(`/api/writings/${id}`, { method: 'DELETE' });
+
 export async function uploadImage(file: Blob, filename: string): Promise<string> {
   const form = new FormData();
   form.append('filename', filename);

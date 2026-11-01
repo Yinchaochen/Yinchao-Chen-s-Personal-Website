@@ -49,6 +49,14 @@ async function initSchema() {
       images jsonb NOT NULL DEFAULT '[]',
       deleted_at timestamptz
     );
+    CREATE TABLE IF NOT EXISTS writings (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      title text NOT NULL,
+      body text NOT NULL,
+      published_at timestamptz NOT NULL DEFAULT now(),
+      updated_at timestamptz NOT NULL DEFAULT now(),
+      deleted_at timestamptz
+    );
   `);
 }
 
@@ -154,6 +162,41 @@ app.put('/api/scrapbook/:id', requireAuth, wrap(async (req, res) => {
 app.delete('/api/scrapbook/:id', requireAuth, wrap(async (req, res) => {
   await pool.query(
     'UPDATE scrapbook_entries SET deleted_at = now() WHERE id = $1',
+    [req.params.id],
+  );
+  res.json({ ok: true });
+}));
+
+/* ── Writings (poems & prose journal) ── */
+app.get('/api/writings', wrap(async (_req, res) => {
+  const { rows } = await pool.query(
+    'SELECT * FROM writings WHERE deleted_at IS NULL ORDER BY published_at ASC',
+  );
+  res.json(rows);
+}));
+
+app.post('/api/writings', requireAuth, wrap(async (req, res) => {
+  const { title, body } = req.body;
+  const { rows } = await pool.query(
+    'INSERT INTO writings (title, body) VALUES ($1, $2) RETURNING *',
+    [title, body],
+  );
+  res.json(rows[0]);
+}));
+
+app.put('/api/writings/:id', requireAuth, wrap(async (req, res) => {
+  const { title, body } = req.body;
+  const { rows } = await pool.query(
+    'UPDATE writings SET title = $1, body = $2, updated_at = now() WHERE id = $3 RETURNING *',
+    [title, body, req.params.id],
+  );
+  if (!rows[0]) return res.status(404).json({ error: 'Not found' });
+  res.json(rows[0]);
+}));
+
+app.delete('/api/writings/:id', requireAuth, wrap(async (req, res) => {
+  await pool.query(
+    'UPDATE writings SET deleted_at = now() WHERE id = $1',
     [req.params.id],
   );
   res.json({ ok: true });

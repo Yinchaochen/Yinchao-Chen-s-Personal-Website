@@ -58,6 +58,7 @@ function getRandomizeKey(pathname: string) {
   if (match) return `post:${match[1]}`;
   if (pathname.startsWith('/blog')) return 'blog-list';
   if (pathname.startsWith('/photography')) return 'photography';
+  if (pathname.startsWith('/journal')) return 'journal';
   return null;
 }
 
@@ -79,6 +80,7 @@ function getTrackFromPath(pathname: string): AudioTrack {
     pathname.startsWith('/photography')
     || pathname.startsWith('/blog')
     || pathname.startsWith('/write')
+    || pathname.startsWith('/journal')
   ) {
     return 'library';
   }
