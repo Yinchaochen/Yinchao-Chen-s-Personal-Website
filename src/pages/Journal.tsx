@@ -8,7 +8,14 @@ import {
   updateWriting,
   type Writing,
 } from '../lib/api';
-import { DOODLES, MARGINALIA } from '../components/JournalDoodles';
+import { MARGINALIA } from '../components/JournalDoodles';
+
+/* Character doodles drawn in the diary's sketchbook style (procedural
+   rough base + local img2img pass), whitened so mix-blend-mode: multiply
+   melts them into the paper. */
+const SKETCHES = [
+  'skater', 'cat', 'wolf', 'birds', 'hiker', 'boat', 'raccoon',
+];
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-US', {
@@ -181,7 +188,12 @@ export default function Journal() {
                   </svg>
                 </h1>
                 <div className="journal-doodle" aria-hidden>
-                  {DOODLES[index % DOODLES.length]}
+                  <img
+                    src={`/images/journal/${SKETCHES[index % SKETCHES.length]}.webp`}
+                    alt=""
+                    loading="lazy"
+                    draggable={false}
+                  />
                 </div>
                 {session && (
                   <span className="journal-admin">
