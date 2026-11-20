@@ -31,7 +31,7 @@ const AMBIENT_AUDIO_SRC = '/audio/ambient.mp3';
 const LIBRARY_TRACKS = [
   '/audio/blog-theme.mp3',
   '/audio/photography-theme.mp3',
-  '/audio/blog/home-to-you-hidden-tapes.wav',
+  '/audio/blog/winter-wind-hidden-tapes.mp3',
   '/audio/blog/solstice-waes-hael.wav',
   '/audio/blog/returning-christian-wade.wav',
   '/audio/blog/stillbrook-formosa.wav',
