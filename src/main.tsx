@@ -12,7 +12,6 @@ const BlogList = lazy(() => import('./pages/BlogList'));
 const BlogPost = lazy(() => import('./pages/BlogPost'));
 const Write = lazy(() => import('./pages/Write'));
 const Photography = lazy(() => import('./pages/Photography'));
-const Journal = lazy(() => import('./pages/Journal'));
 
 /* Recovers from lazy-chunk load failures (flaky network or a fresh deploy
    invalidating old chunk names), which otherwise leave a blank page. */
@@ -99,7 +98,6 @@ createRoot(document.getElementById('root')!).render(
               <Route path="/write" element={<Write />} />
               <Route path="/write/:id" element={<Write />} />
               <Route path="/photography" element={<Photography />} />
-              <Route path="/journal" element={<Journal />} />
             </Route>
           </Routes>
         </Suspense>
